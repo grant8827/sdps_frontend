@@ -1,5 +1,15 @@
 import type { AuthSession, Child, Notice, QueueItem } from '../types';
 
+// Empty by default — a bare `/api${path}` relative fetch, which is
+// correct both for local dev (Vite's server.proxy in vite.config.ts
+// forwards /api to the backend) and for a same-origin deploy (the
+// backend serving this app's own build as static files). Only needs to
+// be set when frontend and backend are deployed as separate origins
+// (e.g. two separate Railway services) — VITE_API_URL is read at BUILD
+// time, not runtime, so changing it requires a rebuild, not just a
+// restart.
+const API_BASE = import.meta.env.VITE_API_URL ?? '';
+
 // A 401 means the server no longer recognizes this token (expired, or
 // revoked — sessions are persisted server-side, but they can still
 // genuinely run out). Screens that poll silently swallow request errors,
@@ -12,12 +22,25 @@ export function onUnauthorized(listener: UnauthorizedListener): void {
 }
 
 async function request<T>(path: string, options: RequestInit = {}, token?: string | null): Promise<T> {
-  const response = await fetch(`/api${path}`, {
-    ...options,
-    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...options.headers },
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE}/api${path}`, {
+      ...options,
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...options.headers },
+    });
+  } catch {
+    throw new Error('Cannot reach the server. Please try again in a moment.');
+  }
   if (response.status === 401 && token) unauthorizedListener?.();
-  const body = response.status === 204 ? null : await response.json();
+  const contentType = response.headers.get('content-type') || '';
+  const body = response.status === 204
+    ? null
+    : contentType.includes('application/json')
+      ? await response.json()
+      : null;
+  if (!contentType.includes('application/json') && response.status !== 204) {
+    throw new Error('The server is not configured correctly. Please contact support.');
+  }
   if (!response.ok) throw new Error(body?.error || 'Request failed');
   return body as T;
 }
