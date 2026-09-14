@@ -21,6 +21,15 @@ export function DropoffPickupScreen() {
   const [children, setChildren] = useState<Child[]>([]);
   const [message, setMessage] = useState('');
 
+  const currentLocation = () => new Promise<{ latitude: number; longitude: number }>((resolve, reject) => {
+    if (!navigator.geolocation) return reject(new Error('Location is not supported by this browser.'));
+    navigator.geolocation.getCurrentPosition(
+      position => resolve({ latitude: position.coords.latitude, longitude: position.coords.longitude }),
+      () => reject(new Error('Allow location access to use drop-off and pick-up.')),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 10000 },
+    );
+  });
+
   useEffect(() => {
     if (!token) return;
     let cancelled = false;
@@ -33,14 +42,14 @@ export function DropoffPickupScreen() {
   const requestDropOff = async (child: Child) => {
     if (!token) return;
     setMessage('');
-    try { await api.requestDropOff(token, child.id); setChildren(await api.myStudents(token)); }
+    try { await api.requestDropOff(token, child.id, await currentLocation()); setChildren(await api.myStudents(token)); }
     catch (error) { setMessage(error instanceof Error ? error.message : 'Could not submit drop-off'); }
   };
 
   const requestPickUp = async (child: Child) => {
     if (!token) return;
     setMessage('');
-    try { await api.requestPickUp(token, child.id); setChildren(await api.myStudents(token)); }
+    try { await api.requestPickUp(token, child.id, await currentLocation()); setChildren(await api.myStudents(token)); }
     catch (error) { setMessage(error instanceof Error ? error.message : 'Could not submit pick-up'); }
   };
 

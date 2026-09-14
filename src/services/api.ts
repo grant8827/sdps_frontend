@@ -51,19 +51,19 @@ export const api = {
     request<AuthSession>('/auth/register-school', { method: 'POST', body: JSON.stringify(input) }),
   myStudents: (token: string) => request<Child[]>('/me/students', {}, token),
   myAttendance: (token: string) => request<MyAttendanceChild[]>('/me/attendance', {}, token),
-  requestDropOff: (token: string, studentId: string) => request<{ id: string }>(`/me/students/${studentId}/drop-off`, { method: 'POST' }, token),
-  requestPickUp: (token: string, studentId: string) => request<{ id: string }>(`/me/students/${studentId}/pick-up`, { method: 'POST' }, token),
+  requestDropOff: (token: string, studentId: string, location: { latitude: number; longitude: number }) => request<{ id: string }>(`/me/students/${studentId}/drop-off`, { method: 'POST', body: JSON.stringify(location) }, token),
+  requestPickUp: (token: string, studentId: string, location: { latitude: number; longitude: number }) => request<{ id: string }>(`/me/students/${studentId}/pick-up`, { method: 'POST', body: JSON.stringify(location) }, token),
   teacherQueue: (token: string) => request<QueueItem[]>('/teacher/queue', {}, token),
   adminQueue: (token: string) => request<QueueItem[]>('/admin/queue', {}, token),
   approveQueueItem: (token: string, queueItemId: string) => request<void>(`/queue/${queueItemId}/approve`, { method: 'POST' }, token),
   declineQueueItem: (token: string, queueItemId: string) => request<void>(`/queue/${queueItemId}/decline`, { method: 'POST' }, token),
   adminOverview: (token: string) => request<AdminOverview>('/admin/overview', {}, token),
   adminSetup: (token: string) => request<AdminSetup>('/admin/setup', {}, token),
-  updateSchoolProfile: (token: string, input: { name?: string; startTime?: string; dismissalTime?: string; extendedTime?: string }) =>
+  updateSchoolProfile: (token: string, input: { name?: string; address?: string; startTime?: string; dismissalTime?: string; extendedTime?: string }) =>
     request<void>('/admin/school', { method: 'PATCH', body: JSON.stringify(input) }, token),
-  addCampus: (token: string, input: { name: string; address?: string; startTime?: string; dismissalTime?: string; extendedTime?: string }) =>
-    request<{ id: string }>('/admin/campuses', { method: 'POST', body: JSON.stringify(input) }, token),
-  updateCampus: (token: string, campusId: string, input: { name?: string; address?: string; startTime?: string; dismissalTime?: string; extendedTime?: string }) =>
+  addCampus: (token: string, input: { name: string; address: string; geofenceRadius?: number; startTime?: string; dismissalTime?: string; extendedTime?: string }) =>
+    request<{ id: string; latitude: number; longitude: number }>('/admin/campuses', { method: 'POST', body: JSON.stringify(input) }, token),
+  updateCampus: (token: string, campusId: string, input: { name?: string; address?: string; geofenceRadius?: number; startTime?: string; dismissalTime?: string; extendedTime?: string }) =>
     request<void>(`/admin/campuses/${campusId}`, { method: 'PATCH', body: JSON.stringify(input) }, token),
   students: (token: string) => request<Student[]>('/admin/students', {}, token),
   addStudent: (token: string, input: unknown) => request<{ id: string }>('/admin/students', { method: 'POST', body: JSON.stringify(input) }, token),
@@ -115,6 +115,7 @@ export interface SchoolProfile {
   id: string;
   name: string;
   code: string;
+  address?: string;
   timezone: string;
   status: string;
   startTime: string | null;
@@ -125,6 +126,9 @@ export interface CampusProfile {
   id: string;
   name: string;
   address?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  geofenceRadius?: number | null;
   startTime: string | null;
   dismissalTime: string | null;
   extendedTime: string | null;

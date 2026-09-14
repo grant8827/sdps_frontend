@@ -3,17 +3,24 @@ import { Screen } from '../../components/Screen';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 
-const emptyForm = { name: '', startTime: '', dismissalTime: '', extendedTime: '' };
+const emptyForm = { name: '', address: '', startTime: '', dismissalTime: '', extendedTime: '' };
+
+const DEFAULT_GEOFENCE_RADIUS = '150';
 
 interface LocationForm {
   id: string | null; // null = not saved yet (added via "+ Add Another Location")
   name: string;
   address: string;
+  geofenceRadius: string;
+  hasCoordinates: boolean; // true once the address has been successfully geocoded — drives the confirmation message below
   startTime: string;
   dismissalTime: string;
   extendedTime: string;
 }
-const emptyLocation = (): LocationForm => ({ id: null, name: '', address: '', startTime: '', dismissalTime: '', extendedTime: '' });
+const emptyLocation = (): LocationForm => ({
+  id: null, name: '', address: '', geofenceRadius: DEFAULT_GEOFENCE_RADIUS, hasCoordinates: false,
+  startTime: '', dismissalTime: '', extendedTime: '',
+});
 
 /**
  * School profile: name, the daily start/dismissal times used to flag a
@@ -37,6 +44,7 @@ export function SchoolSetupScreen() {
     const setup = await api.adminSetup(token);
     setForm({
       name: setup.school.name,
+      address: setup.school.address || '',
       startTime: setup.school.startTime || '',
       dismissalTime: setup.school.dismissalTime || '',
       extendedTime: setup.school.extendedTime || '',
@@ -45,6 +53,8 @@ export function SchoolSetupScreen() {
       id: c.id,
       name: c.name,
       address: c.address || '',
+      geofenceRadius: c.geofenceRadius != null ? String(c.geofenceRadius) : DEFAULT_GEOFENCE_RADIUS,
+      hasCoordinates: c.latitude != null && c.longitude != null,
       startTime: c.startTime || '',
       dismissalTime: c.dismissalTime || '',
       extendedTime: c.extendedTime || '',
@@ -79,16 +89,23 @@ export function SchoolSetupScreen() {
     if (!token) return;
     const loc = locations[index];
     if (!loc.name.trim()) { setMessage('Location name is required.'); return; }
+    if (!loc.address.trim()) { setMessage('Address is required — it sets up the drop-off/pick-up geofence for this location.'); return; }
+    const radius = Number(loc.geofenceRadius);
+    if (!Number.isFinite(radius) || radius <= 0) { setMessage('Geofence radius must be a positive number of meters.'); return; }
     setMessage('');
     setSavingIndex(index);
     try {
-      const input = { name: loc.name, address: loc.address || undefined, startTime: loc.startTime, dismissalTime: loc.dismissalTime, extendedTime: loc.extendedTime };
+      const input = { name: loc.name, address: loc.address, geofenceRadius: radius, startTime: loc.startTime, dismissalTime: loc.dismissalTime, extendedTime: loc.extendedTime };
       if (loc.id) {
         await api.updateCampus(token, loc.id, input);
       } else {
         const result = await api.addCampus(token, input);
         updateLocation(index, { id: result.id });
       }
+      // A successful save always means the address just geocoded fine
+      // (the backend rejects the request otherwise) — mark it here rather
+      // than reloading the whole screen just to confirm that.
+      updateLocation(index, { hasCoordinates: true });
       setMessage(`${loc.name} saved.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Could not save location');
@@ -102,6 +119,9 @@ export function SchoolSetupScreen() {
       <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <p className="field-label" style={{ margin: 0 }}>School Name</p>
         <input className="input" value={form.name} onChange={e => set('name', e.target.value)} />
+
+        <p className="field-label" style={{ margin: 0 }}>Address</p>
+        <input className="input" value={form.address} onChange={e => set('address', e.target.value)} />
 
         <p className="field-label" style={{ margin: 0 }}>Start Time</p>
         <input className="input" type="time" value={form.startTime} onChange={e => set('startTime', e.target.value)} />
@@ -138,8 +158,16 @@ export function SchoolSetupScreen() {
           <p className="field-label" style={{ margin: 0 }}>Location Name</p>
           <input className="input" value={loc.name} onChange={e => updateLocation(index, { name: e.target.value })} />
 
-          <p className="field-label" style={{ margin: 0 }}>Address (optional)</p>
-          <input className="input" value={loc.address} onChange={e => updateLocation(index, { address: e.target.value })} />
+          <p className="field-label" style={{ margin: 0 }}>Address</p>
+          <input className="input" value={loc.address} onChange={e => updateLocation(index, { address: e.target.value, hasCoordinates: false })} />
+
+          <p className="field-label" style={{ margin: 0 }}>Pickup/Drop-off Radius (meters)</p>
+          <input className="input" type="number" min={1} value={loc.geofenceRadius} onChange={e => updateLocation(index, { geofenceRadius: e.target.value })} />
+          <p className="field-label" style={{ margin: 0 }}>
+            {loc.hasCoordinates
+              ? '📍 Located — drop-off/pick-up will require being within this radius of the address above.'
+              : 'A parent must be within this radius of the address above for drop-off/pick-up to activate.'}
+          </p>
 
           <p className="field-label" style={{ margin: 0 }}>Start Time</p>
           <input className="input" type="time" value={loc.startTime} onChange={e => updateLocation(index, { startTime: e.target.value })} />
