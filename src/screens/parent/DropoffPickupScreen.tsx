@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import type { Child } from '../../types';
 import { CHILD_STATUS_COLOR, CHILD_STATUS_LABEL } from '../../utils/childStatus';
 import { api } from '../../services/api';
+import { isAtCampus, type Position } from '../../utils/geofence';
 
 const POLL_MS = 4000;
 
@@ -20,15 +21,20 @@ export function DropoffPickupScreen() {
   const { token } = useAuth();
   const [children, setChildren] = useState<Child[]>([]);
   const [message, setMessage] = useState('');
+  const [position, setPosition] = useState<Position | null>(null);
+  const [locationError, setLocationError] = useState('');
+  const [now, setNow] = useState(Date.now());
 
-  const currentLocation = () => new Promise<{ latitude: number; longitude: number }>((resolve, reject) => {
-    if (!navigator.geolocation) return reject(new Error('Location is not supported by this browser.'));
-    navigator.geolocation.getCurrentPosition(
-      position => resolve({ latitude: position.coords.latitude, longitude: position.coords.longitude }),
-      () => reject(new Error('Allow location access to use drop-off and pick-up.')),
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 10000 },
+  useEffect(() => {
+    if (!navigator.geolocation) { setLocationError('Location is not supported by this browser.'); return; }
+    const watch = navigator.geolocation.watchPosition(
+      fix => { setPosition({ latitude: fix.coords.latitude, longitude: fix.coords.longitude, accuracy: fix.coords.accuracy, timestamp: Date.now() }); setLocationError(''); },
+      () => { setPosition(null); setLocationError('Allow location access to enable drop-off and pick-up.'); },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 },
     );
-  });
+    const timer = window.setInterval(() => setNow(Date.now()), 5000);
+    return () => { navigator.geolocation.clearWatch(watch); window.clearInterval(timer); };
+  }, []);
 
   useEffect(() => {
     if (!token) return;
@@ -42,24 +48,35 @@ export function DropoffPickupScreen() {
   const requestDropOff = async (child: Child) => {
     if (!token) return;
     setMessage('');
-    try { await api.requestDropOff(token, child.id, await currentLocation()); setChildren(await api.myStudents(token)); }
+    try {
+      if (!isAtCampus(position, child)) throw new Error('Move within the school location to drop off.');
+      await api.requestDropOff(token, child.id, { latitude: position!.latitude, longitude: position!.longitude }); setChildren(await api.myStudents(token));
+    }
     catch (error) { setMessage(error instanceof Error ? error.message : 'Could not submit drop-off'); }
   };
 
   const requestPickUp = async (child: Child) => {
     if (!token) return;
     setMessage('');
-    try { await api.requestPickUp(token, child.id, await currentLocation()); setChildren(await api.myStudents(token)); }
+    try {
+      if (!isAtCampus(position, child)) throw new Error('Move within the school location to pick up.');
+      await api.requestPickUp(token, child.id, { latitude: position!.latitude, longitude: position!.longitude }); setChildren(await api.myStudents(token));
+    }
     catch (error) { setMessage(error instanceof Error ? error.message : 'Could not submit pick-up'); }
   };
 
   return (
     <Screen title="Drop-off & Pick-up" subtitle="Alert your child's teacher when you arrive.">
       {message && <div className="card">{message}</div>}
+      {locationError && <div className="card">{locationError}</div>}
       {children.length === 0 ? (
         <p className="empty-text">No children linked to this account yet.</p>
       ) : (
-        children.map(child => (
+        children.map(child => {
+          // `now` triggers reevaluation when a GPS fix becomes stale.
+          void now;
+          const atCampus = isAtCampus(position, child);
+          return (
           <div key={child.id} className="card">
             <div className="card-header">
               <span className="quick-action-title" style={{ fontSize: 17 }}>{child.fullName}</span>
@@ -72,7 +89,7 @@ export function DropoffPickupScreen() {
               <button
                 type="button"
                 className="btn btn-primary"
-                disabled={child.status !== 'AT_HOME'}
+                disabled={child.status !== 'AT_HOME' || !atCampus}
                 onClick={() => requestDropOff(child)}
               >
                 Drop Off
@@ -80,14 +97,16 @@ export function DropoffPickupScreen() {
               <button
                 type="button"
                 className="btn btn-purple"
-                disabled={child.status !== 'PRESENT'}
+                disabled={child.status !== 'PRESENT' || !atCampus}
                 onClick={() => requestPickUp(child)}
               >
                 Pick Up
               </button>
             </div>
+            {!atCampus && <p className="field-label">{child.latitude == null || child.longitude == null ? 'School location is not configured yet.' : position ? 'Move within the school pickup/drop-off radius to enable these buttons.' : 'Turn on location to enable these buttons.'}</p>}
           </div>
-        ))
+          );
+        })
       )}
     </Screen>
   );

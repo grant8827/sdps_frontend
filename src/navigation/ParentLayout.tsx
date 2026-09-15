@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { NoticesProvider, useNotices } from '../context/NoticesContext';
 import { TopBar } from './TopBar';
@@ -6,6 +7,9 @@ import { Sidebar } from './Sidebar';
 /** Parent's three sections — ported from mobile_app's ParentTabNavigator. */
 function ParentShell() {
   const { unreadCount } = useNotices();
+  useEffect(() => {
+    navigator.geolocation?.getCurrentPosition(() => {}, () => {}, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+  }, []);
 
   return (
     <div className="app-shell">

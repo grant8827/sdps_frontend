@@ -38,6 +38,9 @@ export interface Child {
   className?: string;
   status: ChildStatus;
   daycare?: boolean;
+  latitude?: number | null;
+  longitude?: number | null;
+  geofenceRadius?: number | null;
 }
 
 export interface Parent {
