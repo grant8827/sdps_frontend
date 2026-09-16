@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import { emptyAddress, formatAddress, parseAddress, type AddressFields } from '../../utils/address';
 
-const emptyForm = { name: '', address: '', startTime: '', dismissalTime: '', extendedTime: '' };
+const emptyForm = { name: '', address: emptyAddress(), startTime: '', dismissalTime: '', extendedTime: '' };
 
 const DEFAULT_GEOFENCE_RADIUS = '150';
 
@@ -45,7 +45,7 @@ export function SchoolSetupScreen() {
     const setup = await api.adminSetup(token);
     setForm({
       name: setup.school.name,
-      address: setup.school.address || '',
+      address: parseAddress(setup.school.address),
       startTime: setup.school.startTime || '',
       dismissalTime: setup.school.dismissalTime || '',
       extendedTime: setup.school.extendedTime || '',
@@ -63,14 +63,16 @@ export function SchoolSetupScreen() {
   };
   useEffect(() => { load().catch(error => setMessage(error.message)); }, [token]);
 
-  const set = (key: keyof typeof form, value: string) => setForm(current => ({ ...current, [key]: value }));
+  const set = (key: 'name' | 'startTime' | 'dismissalTime' | 'extendedTime', value: string) => setForm(current => ({ ...current, [key]: value }));
+  const setSchoolAddress = (key: keyof AddressFields, value: string) =>
+    setForm(current => ({ ...current, address: { ...current.address, [key]: value } }));
 
   const save = async () => {
     if (!token) return;
     setMessage('');
     setSubmitting(true);
     try {
-      await api.updateSchoolProfile(token, form);
+      await api.updateSchoolProfile(token, { ...form, address: formatAddress(form.address) });
       setMessage('School profile saved.');
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Could not save school profile');
@@ -128,8 +130,17 @@ export function SchoolSetupScreen() {
         <p className="field-label" style={{ margin: 0 }}>School Name</p>
         <input className="input" value={form.name} onChange={e => set('name', e.target.value)} />
 
-        <p className="field-label" style={{ margin: 0 }}>Address</p>
-        <input className="input" value={form.address} onChange={e => set('address', e.target.value)} />
+        <p className="field-label" style={{ margin: 0 }}>School Mailing Address</p>
+        <input className="input" autoComplete="address-line1" placeholder="Street address" value={form.address.addressLine1} onChange={e => setSchoolAddress('addressLine1', e.target.value)} />
+        <input className="input" autoComplete="address-line2" placeholder="Suite, unit, building (optional)" value={form.address.addressLine2} onChange={e => setSchoolAddress('addressLine2', e.target.value)} />
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(90px, 1fr)', gap: 10 }}>
+          <input className="input" autoComplete="address-level2" placeholder="City" value={form.address.city} onChange={e => setSchoolAddress('city', e.target.value)} />
+          <input className="input" autoComplete="address-level1" placeholder="State/Province" value={form.address.state} onChange={e => setSchoolAddress('state', e.target.value)} />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(110px, 1fr) minmax(0, 2fr)', gap: 10 }}>
+          <input className="input" autoComplete="postal-code" placeholder="ZIP/Postal code" value={form.address.postalCode} onChange={e => setSchoolAddress('postalCode', e.target.value)} />
+          <input className="input" autoComplete="country-name" placeholder="Country" value={form.address.country} onChange={e => setSchoolAddress('country', e.target.value)} />
+        </div>
 
         <p className="field-label" style={{ margin: 0 }}>Start Time</p>
         <input className="input" type="time" value={form.startTime} onChange={e => set('startTime', e.target.value)} />

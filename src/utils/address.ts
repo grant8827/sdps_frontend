@@ -23,11 +23,25 @@ export function parseAddress(value?: string): AddressFields {
   const result = emptyAddress();
   if (!value) return result;
   const parts = value.split(',').map(part => part.trim()).filter(Boolean);
+  // Addresses written by formatAddress have five comma-separated parts,
+  // or six when address line 2 is present. Read from the right so a suite
+  // never gets mistaken for the city after the form reloads.
+  if (parts.length >= 5) {
+    result.country = parts.pop() || result.country;
+    result.postalCode = parts.pop() || '';
+    result.state = parts.pop() || '';
+    result.city = parts.pop() || '';
+    result.addressLine1 = parts.shift() || '';
+    result.addressLine2 = parts.join(', ');
+    return result;
+  }
+
+  // Best-effort support for addresses saved by older versions.
   result.addressLine1 = parts.shift() || '';
-  result.country = parts.length > 2 ? parts.pop() || result.country : result.country;
+  if (parts.length >= 3) result.country = parts.pop() || result.country;
   result.city = parts.shift() || '';
-  const region = parts.join(' ').trim();
-  const match = region.match(/^(.*?)(?:\s+([A-Za-z0-9][A-Za-z0-9 -]*))?$/);
+  const region = parts.join(', ').trim();
+  const match = region.match(/^(.+?)\s+([A-Za-z0-9-]{3,12})$/);
   result.state = match?.[1]?.trim() || region;
   result.postalCode = match?.[2]?.trim() || '';
   return result;
