@@ -39,6 +39,7 @@ export function SchoolSetupScreen() {
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [savingIndex, setSavingIndex] = useState<number | null>(null);
+  const [locationMessages, setLocationMessages] = useState<Record<number, string>>({});
 
   const load = async () => {
     if (!token) return;
@@ -96,13 +97,14 @@ export function SchoolSetupScreen() {
   const saveLocation = async (index: number) => {
     if (!token) return;
     const loc = locations[index];
-    if (!loc.name.trim()) { setMessage('Location name is required.'); return; }
+    const showLocationMessage = (value: string) => setLocationMessages(current => ({ ...current, [index]: value }));
+    if (!loc.name.trim()) { showLocationMessage('Location name is required.'); return; }
     if (!loc.address.addressLine1.trim() || !loc.address.city.trim() || !loc.address.state.trim() || !loc.address.postalCode.trim()) {
-      setMessage('Street address, city, state, and ZIP/postal code are required for the location geofence.'); return;
+      showLocationMessage('Street address, city, state, and ZIP/postal code are required for the location geofence.'); return;
     }
     const radius = Number(loc.geofenceRadius);
-    if (!Number.isFinite(radius) || radius <= 0) { setMessage('Geofence radius must be a positive number of meters.'); return; }
-    setMessage('');
+    if (!Number.isFinite(radius) || radius <= 0) { showLocationMessage('Geofence radius must be a positive number of meters.'); return; }
+    showLocationMessage('Verifying address…');
     setSavingIndex(index);
     try {
       const input = { name: loc.name, address: formatAddress(loc.address), geofenceRadius: radius, startTime: loc.startTime, dismissalTime: loc.dismissalTime, extendedTime: loc.extendedTime };
@@ -115,10 +117,10 @@ export function SchoolSetupScreen() {
       // A successful save always means the address just geocoded fine
       // (the backend rejects the request otherwise) — mark it here rather
       // than reloading the whole screen just to confirm that.
-      updateLocation(index, { hasCoordinates: true });
-      setMessage(`${loc.name} saved.`);
+      await load();
+      showLocationMessage(`${loc.name} saved and mapped successfully.`);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Could not save location');
+      showLocationMessage(error instanceof Error ? error.message : 'Could not save location');
     } finally {
       setSavingIndex(null);
     }
@@ -209,6 +211,7 @@ export function SchoolSetupScreen() {
           <button type="button" className="btn btn-primary" onClick={() => saveLocation(index)} disabled={savingIndex === index}>
             {savingIndex === index ? 'Saving…' : 'Save Location'}
           </button>
+          {locationMessages[index] && <p className="field-label" style={{ margin: 0 }}>{locationMessages[index]}</p>}
         </div>
       ))}
 
