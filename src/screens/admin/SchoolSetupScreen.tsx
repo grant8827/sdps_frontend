@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Screen } from '../../components/Screen';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
+import { emptyAddress, formatAddress, parseAddress, type AddressFields } from '../../utils/address';
 
 const emptyForm = { name: '', address: '', startTime: '', dismissalTime: '', extendedTime: '' };
 
@@ -10,7 +11,7 @@ const DEFAULT_GEOFENCE_RADIUS = '150';
 interface LocationForm {
   id: string | null; // null = not saved yet (added via "+ Add Another Location")
   name: string;
-  address: string;
+  address: AddressFields;
   geofenceRadius: string;
   hasCoordinates: boolean; // true once the address has been successfully geocoded — drives the confirmation message below
   startTime: string;
@@ -18,7 +19,7 @@ interface LocationForm {
   extendedTime: string;
 }
 const emptyLocation = (): LocationForm => ({
-  id: null, name: '', address: '', geofenceRadius: DEFAULT_GEOFENCE_RADIUS, hasCoordinates: false,
+  id: null, name: '', address: emptyAddress(), geofenceRadius: DEFAULT_GEOFENCE_RADIUS, hasCoordinates: false,
   startTime: '', dismissalTime: '', extendedTime: '',
 });
 
@@ -52,7 +53,7 @@ export function SchoolSetupScreen() {
     setLocations(setup.campuses.map(c => ({
       id: c.id,
       name: c.name,
-      address: c.address || '',
+      address: parseAddress(c.address),
       geofenceRadius: c.geofenceRadius != null ? String(c.geofenceRadius) : DEFAULT_GEOFENCE_RADIUS,
       hasCoordinates: c.latitude != null && c.longitude != null,
       startTime: c.startTime || '',
@@ -81,6 +82,11 @@ export function SchoolSetupScreen() {
   const updateLocation = (index: number, patch: Partial<LocationForm>) =>
     setLocations(prev => prev.map((loc, i) => (i === index ? { ...loc, ...patch } : loc)));
 
+  const updateLocationAddress = (index: number, key: keyof AddressFields, value: string) =>
+    setLocations(prev => prev.map((loc, i) => i === index
+      ? { ...loc, address: { ...loc.address, [key]: value }, hasCoordinates: false }
+      : loc));
+
   const addAnotherLocation = () => setLocations(prev => [...prev, emptyLocation()]);
 
   const removeUnsavedLocation = (index: number) => setLocations(prev => prev.filter((_, i) => i !== index));
@@ -89,13 +95,15 @@ export function SchoolSetupScreen() {
     if (!token) return;
     const loc = locations[index];
     if (!loc.name.trim()) { setMessage('Location name is required.'); return; }
-    if (!loc.address.trim()) { setMessage('Address is required — it sets up the drop-off/pick-up geofence for this location.'); return; }
+    if (!loc.address.addressLine1.trim() || !loc.address.city.trim() || !loc.address.state.trim() || !loc.address.postalCode.trim()) {
+      setMessage('Street address, city, state, and ZIP/postal code are required for the location geofence.'); return;
+    }
     const radius = Number(loc.geofenceRadius);
     if (!Number.isFinite(radius) || radius <= 0) { setMessage('Geofence radius must be a positive number of meters.'); return; }
     setMessage('');
     setSavingIndex(index);
     try {
-      const input = { name: loc.name, address: loc.address, geofenceRadius: radius, startTime: loc.startTime, dismissalTime: loc.dismissalTime, extendedTime: loc.extendedTime };
+      const input = { name: loc.name, address: formatAddress(loc.address), geofenceRadius: radius, startTime: loc.startTime, dismissalTime: loc.dismissalTime, extendedTime: loc.extendedTime };
       if (loc.id) {
         await api.updateCampus(token, loc.id, input);
       } else {
@@ -158,8 +166,17 @@ export function SchoolSetupScreen() {
           <p className="field-label" style={{ margin: 0 }}>Location Name</p>
           <input className="input" value={loc.name} onChange={e => updateLocation(index, { name: e.target.value })} />
 
-          <p className="field-label" style={{ margin: 0 }}>Address</p>
-          <input className="input" value={loc.address} onChange={e => updateLocation(index, { address: e.target.value, hasCoordinates: false })} />
+          <p className="field-label" style={{ margin: 0 }}>School Location Address</p>
+          <input className="input" autoComplete="address-line1" placeholder="Street address" value={loc.address.addressLine1} onChange={e => updateLocationAddress(index, 'addressLine1', e.target.value)} />
+          <input className="input" autoComplete="address-line2" placeholder="Suite, unit, building (optional)" value={loc.address.addressLine2} onChange={e => updateLocationAddress(index, 'addressLine2', e.target.value)} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(90px, 1fr)', gap: 10 }}>
+            <input className="input" autoComplete="address-level2" placeholder="City" value={loc.address.city} onChange={e => updateLocationAddress(index, 'city', e.target.value)} />
+            <input className="input" autoComplete="address-level1" placeholder="State/Province" value={loc.address.state} onChange={e => updateLocationAddress(index, 'state', e.target.value)} />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(110px, 1fr) minmax(0, 2fr)', gap: 10 }}>
+            <input className="input" autoComplete="postal-code" placeholder="ZIP/Postal code" value={loc.address.postalCode} onChange={e => updateLocationAddress(index, 'postalCode', e.target.value)} />
+            <input className="input" autoComplete="country-name" placeholder="Country" value={loc.address.country} onChange={e => updateLocationAddress(index, 'country', e.target.value)} />
+          </div>
 
           <p className="field-label" style={{ margin: 0 }}>Pickup/Drop-off Radius (meters)</p>
           <input className="input" type="number" min={1} value={loc.geofenceRadius} onChange={e => updateLocation(index, { geofenceRadius: e.target.value })} />
