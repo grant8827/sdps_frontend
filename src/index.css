@@ -121,6 +121,12 @@ a {
   cursor: pointer;
 }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 /* ---- Dashboard body: sidebar + content, side by side below the topbar ---- */
 
 .app-body {
@@ -1199,6 +1205,28 @@ a {
   }
 
   .hamburger {
+    display: flex;
+  }
+
+  /* Dashboard sidebar (Admin/Parent/Teacher — see DashboardShell): a
+     persistent left column above this breakpoint, a hamburger-toggled
+     dropdown panel below it. */
+  .sidebar {
+    display: none;
+    position: fixed;
+    top: 56px;
+    left: 0;
+    right: 0;
+    z-index: 15;
+    width: auto;
+    height: auto;
+    max-height: calc(100vh - 56px);
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 8px 16px rgba(16, 17, 20, 0.12);
+  }
+
+  .sidebar.sidebar-open {
     display: flex;
   }
 
