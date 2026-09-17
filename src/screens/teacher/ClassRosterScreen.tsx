@@ -1,48 +1,68 @@
 import { useEffect, useState } from 'react';
 import { Screen } from '../../components/Screen';
-import { AttendanceList } from '../../components/AttendanceList';
 import { useAuth } from '../../context/AuthContext';
-import { api, type AttendanceRow, type SettableAttendanceStatus, type TeacherClass } from '../../services/api';
-
-const todayIso = () => new Date().toISOString().slice(0, 10);
+import { api, type RosterStudent, type TeacherClass } from '../../services/api';
 
 /**
- * Teacher Tab 2 - Class Roster: the classroom the teacher was assigned
- * to (admin sets this from Faculty's classroom dropdown) plus today's
- * real, actionable attendance for every student in it. Mirrors the
- * mobile app's ClassRosterScreen.
+ * Teacher Tab 2 - Class Roster: who's in the classroom the teacher was
+ * assigned to (admin sets this from Faculty's classroom dropdown), and
+ * their enrollment status — active or suspended, set by an admin from
+ * Students, shown here read-only (a teacher can't change it). A
+ * removed (ARCHIVED) student is filtered out server-side rather than
+ * shown at all. Day-to-day attendance marking lives on the separate
+ * Attendance tab, not here — the two used to be duplicates of the same
+ * screen, which made "Suspended" ambiguous (a day's attendance mark vs.
+ * this enrollment status).
  */
 export function ClassRosterScreen() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [myClass, setMyClass] = useState<TeacherClass | null>(null);
-  const [rows, setRows] = useState<AttendanceRow[]>([]);
+  const [students, setStudents] = useState<RosterStudent[]>([]);
   const [message, setMessage] = useState('');
 
   useEffect(() => {
     if (!token) return;
     api.teacherClass(token).then(setMyClass).catch(() => {});
-    api.teacherAttendance(token).then(setRows).catch(error => setMessage(error.message));
+    api.teacherStudents(token).then(setStudents).catch(error => setMessage(error.message));
   }, [token]);
 
-  const mark = async (row: AttendanceRow, status: SettableAttendanceStatus) => {
-    if (!token) return;
-    setMessage('');
-    try {
-      await api.markAttendance(token, row.studentId, todayIso(), status);
-      setRows(await api.teacherAttendance(token));
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Could not mark attendance');
-    }
-  };
-
   const subtitle = myClass
-    ? `${myClass.name} — today's attendance.`
+    ? [myClass.name, `Grade ${myClass.gradeName}`, myClass.roomName, user?.fullName].filter(Boolean).join(' · ')
     : "You haven't been assigned to a classroom yet — ask your admin to set it from Faculty.";
 
   return (
     <Screen title="Class Roster" subtitle={subtitle}>
       {message && <div className="card">{message}</div>}
-      <AttendanceList rows={rows} onMark={mark} />
+      {students.length === 0 ? (
+        <p className="empty-text">No students in this class yet.</p>
+      ) : (
+        <div className="table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr><th /><th>Student</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              {students.map(student => (
+                <tr key={student.id}>
+                  <td>
+                    {student.photoUrl ? (
+                      <img src={student.photoUrl} alt="" className="avatar" />
+                    ) : (
+                      <span className="avatar avatar-placeholder">{student.fullName.charAt(0)}</span>
+                    )}
+                  </td>
+                  <td>{student.fullName}</td>
+                  <td>
+                    <span className="pill" style={{ backgroundColor: student.status === 'SUSPENDED' ? 'var(--red)' : 'var(--green)', color: '#fff' }}>
+                      {student.status === 'SUSPENDED' ? 'Suspended' : 'Active'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </Screen>
   );
 }

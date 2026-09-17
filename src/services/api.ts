@@ -84,6 +84,7 @@ export const api = {
   deleteGuardian: (token: string, guardianId: string) => request<void>(`/admin/guardians/${guardianId}`, { method: 'DELETE' }, token),
   teacherAttendance: (token: string, date?: string) => request<AttendanceRow[]>(`/teacher/attendance${date ? `?date=${date}` : ''}`, {}, token),
   teacherClass: (token: string) => request<TeacherClass | null>('/teacher/class', {}, token),
+  teacherStudents: (token: string) => request<RosterStudent[]>('/teacher/students', {}, token),
   adminAttendance: (token: string, classId: string, date?: string) =>
     request<AttendanceRow[]>(`/admin/attendance?classId=${encodeURIComponent(classId)}${date ? `&date=${date}` : ''}`, {}, token),
   markAttendance: (token: string, studentId: string, date: string, status: SettableAttendanceStatus) =>
@@ -162,6 +163,7 @@ export interface AttendanceRow {
   status: SettableAttendanceStatus | 'UNMARKED';
 }
 export interface TeacherClass { id: string; name: string; roomName: string | null; gradeName: string }
+export interface RosterStudent { id: string; fullName: string; photoUrl?: string; status: 'ACTIVE' | 'SUSPENDED' }
 export interface MyAttendanceChild {
   id: string;
   fullName: string;
