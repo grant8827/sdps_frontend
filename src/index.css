@@ -845,6 +845,21 @@ a {
 /* ================= Marketing site ================= */
 
 .public-page {
+  /* The marketing page commits to one light look regardless of the
+     visitor's system theme (like the login/register screens already
+     do) — pin every theme-following token to its light value here so
+     dark-mode text doesn't turn near-white on this now-white
+     background (--text etc. would otherwise inherit the dark palette
+     from :root). */
+  --bg: #FFFFFF;
+  --card-bg: #FFFFFF;
+  --border: #E2E4E9;
+  --border-strong: #D1D5DB;
+  --text: #1A1D23;
+  --text-muted: #6B7280;
+  --text-faint: #9CA3AF;
+  --chip-bg: #F3F4F6;
+  --input-bg: #F5F6F8;
   background: var(--bg);
   min-height: 100vh;
 }
