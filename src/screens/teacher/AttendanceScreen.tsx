@@ -60,6 +60,7 @@ export function AttendanceScreen() {
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1); // 1-12
   const [infoOpen, setInfoOpen] = useState(false);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     if (!token) return;
@@ -92,6 +93,8 @@ export function AttendanceScreen() {
     return record.status === 'PRESENT' && record.late ? 'LATE' : record.status;
   };
 
+  const visibleStudents = students.filter(student => student.fullName.toLowerCase().includes(search.trim().toLowerCase()));
+
   return (
     <Screen title="Attendance" subtitle={tab === 'today' ? "Mark today's attendance for your class." : 'Select a month to see the full record, week by week.'}>
       <div className="subtabs">
@@ -121,10 +124,14 @@ export function AttendanceScreen() {
             <button type="button" className="btn btn-secondary" onClick={() => setInfoOpen(true)}>ℹ️ Info</button>
           </div>
 
+          <input className="input" placeholder="Search for a student…" value={search} onChange={e => setSearch(e.target.value)} />
+
           {students.length === 0 ? (
             <p className="empty-text">No students in this class yet.</p>
+          ) : visibleStudents.length === 0 ? (
+            <p className="empty-text">No student matches "{search}".</p>
           ) : (
-            students.map(student => (
+            visibleStudents.map(student => (
               <div key={student.id} className="card">
                 <p className="quick-action-title" style={{ fontSize: 17 }}>{student.fullName}</p>
                 <p className="quick-action-subtitle" style={{ marginBottom: 10 }}>{MONTH_NAMES[month - 1]} {year}</p>
