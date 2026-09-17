@@ -85,6 +85,7 @@ export const api = {
   teacherAttendance: (token: string, date?: string) => request<AttendanceRow[]>(`/teacher/attendance${date ? `?date=${date}` : ''}`, {}, token),
   teacherClass: (token: string) => request<TeacherClass | null>('/teacher/class', {}, token),
   teacherStudents: (token: string) => request<RosterStudent[]>('/teacher/students', {}, token),
+  teacherAttendanceHistory: (token: string) => request<TeacherAttendanceStudent[]>('/teacher/attendance-history', {}, token),
   adminAttendance: (token: string, classId: string, date?: string) =>
     request<AttendanceRow[]>(`/admin/attendance?classId=${encodeURIComponent(classId)}${date ? `&date=${date}` : ''}`, {}, token),
   markAttendance: (token: string, studentId: string, date: string, status: SettableAttendanceStatus) =>
@@ -164,6 +165,11 @@ export interface AttendanceRow {
 }
 export interface TeacherClass { id: string; name: string; roomName: string | null; gradeName: string }
 export interface RosterStudent { id: string; fullName: string; photoUrl?: string; status: 'ACTIVE' | 'SUSPENDED' }
+export interface TeacherAttendanceStudent {
+  id: string;
+  fullName: string;
+  records: { date: string; status: 'PRESENT' | 'ABSENT' | 'SICK' | 'SUSPENDED' | 'HOLIDAY'; late: boolean }[];
+}
 export interface MyAttendanceChild {
   id: string;
   fullName: string;
