@@ -1,12 +1,6 @@
 import type { AttendanceRow, SettableAttendanceStatus } from '../services/api';
 
-// This is a day's attendance mark (e.g. "Suspended" = suspended from
-// school that day, a disciplinary record) — unrelated to a student's
-// enrollment status shown on the Class Roster screen, which happens to
-// reuse the same word for a different concept (admin-set active/suspended
-// enrollment). Exported so both the single-day list below and the
-// teacher's weekly grid (AttendanceScreen.tsx) render the same way.
-export const STATUS_LABEL: Record<AttendanceRow['status'], string> = {
+const STATUS_LABEL: Record<AttendanceRow['status'], string> = {
   PRESENT: 'Present',
   ABSENT: 'Absent',
   SICK: 'Sick',
@@ -15,7 +9,7 @@ export const STATUS_LABEL: Record<AttendanceRow['status'], string> = {
   WEEKEND: 'Weekend (WK)',
   UNMARKED: 'Not marked',
 };
-export const STATUS_COLOR: Record<AttendanceRow['status'], string> = {
+const STATUS_COLOR: Record<AttendanceRow['status'], string> = {
   PRESENT: 'var(--green)',
   ABSENT: 'var(--red)',
   SICK: 'var(--amber)',
@@ -24,14 +18,14 @@ export const STATUS_COLOR: Record<AttendanceRow['status'], string> = {
   WEEKEND: '#E5E7EB',
   UNMARKED: 'var(--gray)',
 };
-export const STATUS_TEXT_COLOR: Record<AttendanceRow['status'], string> = {
+const STATUS_TEXT_COLOR: Record<AttendanceRow['status'], string> = {
   PRESENT: '#fff', ABSENT: '#fff', SICK: '#fff', SUSPENDED: '#fff', HOLIDAY: '#fff',
   WEEKEND: '#374151', UNMARKED: '#fff',
 };
 // Every date defaults to WEEKEND (Sat/Sun) or UNMARKED (weekday) until a
 // teacher/admin picks something from this list — including picking
 // Weekend back explicitly, e.g. after having overridden a Saturday.
-export const SETTABLE_STATUSES: SettableAttendanceStatus[] = ['PRESENT', 'ABSENT', 'SICK', 'SUSPENDED', 'HOLIDAY', 'WEEKEND'];
+const SETTABLE_STATUSES: SettableAttendanceStatus[] = ['PRESENT', 'ABSENT', 'SICK', 'SUSPENDED', 'HOLIDAY', 'WEEKEND'];
 
 /** Shared attendance roster table — used by both Admin's (classroom-scoped) and Teacher's (own-class) Attendance screens. */
 export function AttendanceList({ rows, onMark }: { rows: AttendanceRow[]; onMark: (row: AttendanceRow, status: SettableAttendanceStatus) => void }) {
