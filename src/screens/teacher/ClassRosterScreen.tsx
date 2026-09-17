@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { api, type RosterStudent, type TeacherClass } from '../../services/api';
 
 /**
- * Teacher Tab 2 - Class Roster: who's in the classroom the teacher was
+ * Teacher Tab 2 - Class: who's in the classroom the teacher was
  * assigned to (admin sets this from Faculty's classroom dropdown), and
  * their enrollment status — active or suspended, set by an admin from
  * Students, shown here read-only (a teacher can't change it). A
@@ -26,12 +26,15 @@ export function ClassRosterScreen() {
     api.teacherStudents(token).then(setStudents).catch(error => setMessage(error.message));
   }, [token]);
 
+  // Just grade/room/teacher, not myClass.name too — the class's own name
+  // (e.g. "Grade 1 - Room 12") already tends to spell those out, so
+  // showing both read as a duplicated "Grade 1 - Room 12 · Grade 1 · Room 12".
   const subtitle = myClass
-    ? [myClass.name, `Grade ${myClass.gradeName}`, myClass.roomName, user?.fullName].filter(Boolean).join(' · ')
+    ? [`Grade ${myClass.gradeName}`, myClass.roomName, user?.fullName].filter(Boolean).join(' · ')
     : "You haven't been assigned to a classroom yet — ask your admin to set it from Faculty.";
 
   return (
-    <Screen title="Class Roster" subtitle={subtitle}>
+    <Screen title="Class" subtitle={subtitle}>
       {message && <div className="card">{message}</div>}
       {students.length === 0 ? (
         <p className="empty-text">No students in this class yet.</p>
