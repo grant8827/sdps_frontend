@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Screen } from '../../components/Screen';
 import { useAuth } from '../../context/AuthContext';
 import { AttendanceList } from '../../components/AttendanceList';
-import { api, type AdminSetup, type AttendanceRow, type ClassRow, type SettableAttendanceStatus, type Student, type TeacherRow } from '../../services/api';
+import { api, type AdminSetup, type AttendanceRow, type SettableAttendanceStatus, type Student } from '../../services/api';
 
 interface DraftChild {
   firstName: string;
@@ -25,44 +25,32 @@ export function StudentManagementScreen() {
   const [tab, setTab] = useState<Tab>('list');
   const [setup, setSetup] = useState<AdminSetup | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
-  const [classRows, setClassRows] = useState<ClassRow[]>([]);
-  const [teachers, setTeachers] = useState<TeacherRow[]>([]);
   const [children, setChildren] = useState<DraftChild[]>([emptyChild()]);
   const [guardianForm, setGuardianForm] = useState(emptyGuardianForm);
-  const [promoteFromClassId, setPromoteFromClassId] = useState('');
-  const [promoteToClassId, setPromoteToClassId] = useState('');
-  const [promoteTeacherId, setPromoteTeacherId] = useState('');
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [gradeFilter, setGradeFilter] = useState('');
+  const [search, setSearch] = useState('');
   const [attendanceClassId, setAttendanceClassId] = useState('');
   const [attendanceRows, setAttendanceRows] = useState<AttendanceRow[]>([]);
   const activeYear = setup?.schoolYears.find(y => y.status === 'ACTIVE');
-  const nextYear = setup?.schoolYears.find(y => y.status === 'PLANNING');
 
   const load = async () => {
     if (!token) return;
-    const [nextSetup, nextStudents, nextClasses, nextTeachers] = await Promise.all([api.adminSetup(token), api.students(token), api.classes(token), api.teachers(token)]);
-    setSetup(nextSetup); setStudents(nextStudents); setClassRows(nextClasses); setTeachers(nextTeachers);
+    const [nextSetup, nextStudents] = await Promise.all([api.adminSetup(token), api.students(token)]);
+    setSetup(nextSetup); setStudents(nextStudents);
     setGuardianForm(current => ({ ...current, schoolYearId: current.schoolYearId || nextSetup.schoolYears.find(y => y.status === 'ACTIVE')?.id || '' }));
     setChildren(current => current.map(c => c.gradeLevelId ? c : { ...c, gradeLevelId: nextSetup.gradeLevels[0]?.id || '' }));
     setAttendanceClassId(current => current || nextSetup.classes[0]?.id || '');
-    const activeId = nextSetup.schoolYears.find(y => y.status === 'ACTIVE')?.id;
-    const nextId = nextSetup.schoolYears.find(y => y.status === 'PLANNING')?.id;
-    setPromoteFromClassId(current => current || nextClasses.find(c => c.schoolYearId === activeId)?.id || '');
-    setPromoteToClassId(current => current || nextClasses.find(c => c.schoolYearId === nextId)?.id || '');
   };
   useEffect(() => { load().catch(error => setMessage(error.message)); }, [token]);
-  const visibleStudents = useMemo(() => gradeFilter ? students.filter(s => s.gradeLevelId === gradeFilter) : students, [students, gradeFilter]);
+  const visibleStudents = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return students
+      .filter(s => !gradeFilter || s.gradeLevelId === gradeFilter)
+      .filter(s => !term || s.fullName.toLowerCase().includes(term));
+  }, [students, gradeFilter, search]);
   const classesFor = (gradeLevelId: string) => setup?.classes.filter(c => c.schoolYearId === guardianForm.schoolYearId && c.gradeLevelId === gradeLevelId) || [];
-  const fromClassOptions = useMemo(() => classRows.filter(c => c.schoolYearId === activeYear?.id), [classRows, activeYear]);
-  const toClassOptions = useMemo(() => classRows.filter(c => c.schoolYearId === nextYear?.id), [classRows, nextYear]);
-  const promoteToClass = classRows.find(c => c.id === promoteToClassId);
-
-  // Pre-fill with the To class's current teacher (if any) whenever the
-  // selected class changes — the admin can still pick someone else,
-  // e.g. when the class doesn't have a teacher yet.
-  useEffect(() => { setPromoteTeacherId(promoteToClass?.teacherId || ''); }, [promoteToClassId, classRows]);
 
   useEffect(() => {
     if (!token || !attendanceClassId) { setAttendanceRows([]); return; }
@@ -139,23 +127,6 @@ export function StudentManagementScreen() {
     }
   };
 
-  const runPromotion = async () => {
-    if (!token || !promoteFromClassId || !promoteToClassId) return;
-    const fromClass = classRows.find(c => c.id === promoteFromClassId);
-    const toClass = classRows.find(c => c.id === promoteToClassId);
-    const teacherName = teachers.find(t => t.id === promoteTeacherId)?.fullName;
-    const teacherChanged = promoteTeacherId && promoteTeacherId !== toClass?.teacherId;
-    if (!window.confirm(`Move every active student in "${fromClass?.name}" into "${toClass?.name}" (Grade ${toClass?.gradeName})${teacherName ? `, taught by ${teacherName}` : ''}${teacherChanged ? ' — this reassigns that teacher off their current class' : ''}?`)) return;
-    setMessage('');
-    try {
-      const result = await api.promoteByClass(token, { fromClassId: promoteFromClassId, toClassId: promoteToClassId, teacherUserId: promoteTeacherId || undefined });
-      setMessage(`${result.promoted} student(s) promoted to "${toClass?.name}"${result.skipped ? ` (${result.skipped} already had an enrollment there)` : ''}.`);
-      await load();
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Promotion failed');
-    }
-  };
-
   const toggleSuspend = async (student: Student) => {
     if (!token) return;
     const nextStatus = student.enrollmentStatus === 'SUSPENDED' ? 'ACTIVE' : 'SUSPENDED';
@@ -170,7 +141,7 @@ export function StudentManagementScreen() {
 
   return <Screen title="Students" subtitle="Admin-only enrollment, attendance, and yearly promotion.">
     <div className="subtabs">
-      <button type="button" className={`subtab${tab === 'list' ? ' subtab-active' : ''}`} onClick={() => setTab('list')}>Students &amp; Grades</button>
+      <button type="button" className={`subtab${tab === 'list' ? ' subtab-active' : ''}`} onClick={() => setTab('list')}>Students</button>
       <button type="button" className={`subtab${tab === 'attendance' ? ' subtab-active' : ''}`} onClick={() => setTab('attendance')}>Attendance</button>
       <button type="button" className={`subtab${tab === 'register' ? ' subtab-active' : ''}`} onClick={() => setTab('register')}>Register a Student</button>
     </div>
@@ -232,42 +203,13 @@ export function StudentManagementScreen() {
 
     {tab === 'list' && (
       <>
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <p className="form-title" style={{ marginBottom: 0 }}>Promote Students</p>
-          <p className="quick-action-subtitle">{activeYear?.name} → {nextYear?.name}</p>
-
-          <p className="field-label" style={{ margin: 0 }}>From Class</p>
-          <select className="input" value={promoteFromClassId} onChange={e => setPromoteFromClassId(e.target.value)}>
-            {fromClassOptions.length === 0 && <option value="">No classes in {activeYear?.name || 'the active year'} yet</option>}
-            {fromClassOptions.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-
-          <p className="field-label" style={{ margin: 0 }}>To Class</p>
-          <select className="input" value={promoteToClassId} onChange={e => setPromoteToClassId(e.target.value)}>
-            {toClassOptions.length === 0 && <option value="">No classes set up for {nextYear?.name || 'next year'} yet</option>}
-            {toClassOptions.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-          {promoteToClass && (
-            <p className="field-label" style={{ margin: 0 }}>Grade {promoteToClass.gradeName}</p>
-          )}
-
-          <p className="field-label" style={{ margin: 0 }}>Teacher</p>
-          <select className="input" value={promoteTeacherId} onChange={e => setPromoteTeacherId(e.target.value)}>
-            <option value="">No classroom assigned yet</option>
-            {teachers.map(t => <option key={t.id} value={t.id}>{t.fullName}</option>)}
-          </select>
-
-          <button type="button" className="btn btn-primary" disabled={!promoteFromClassId || !promoteToClassId} onClick={runPromotion}>
-            Update
-          </button>
-        </div>
-
         <div className="btn-row" style={{ alignItems: 'center', marginBottom: 12 }}>
           <p className="field-label" style={{ margin: 0 }}>Filter by grade</p>
           <select className="input" style={{ maxWidth: 220 }} value={gradeFilter} onChange={e => setGradeFilter(e.target.value)}>
             <option value="">All Grades</option>
             {setup?.gradeLevels.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
           </select>
+          <input className="input" style={{ maxWidth: 260 }} placeholder="Search for a student…" value={search} onChange={e => setSearch(e.target.value)} />
         </div>
 
         <div className="table-wrap">
@@ -290,7 +232,7 @@ export function StudentManagementScreen() {
                   </td>
                 </tr>
               ))}
-              {visibleStudents.length === 0 && <tr><td colSpan={7} className="empty-text">{gradeFilter ? 'No students in this grade.' : 'No students enrolled yet.'}</td></tr>}
+              {visibleStudents.length === 0 && <tr><td colSpan={7} className="empty-text">{search.trim() ? `No student matches "${search.trim()}".` : gradeFilter ? 'No students in this grade.' : 'No students enrolled yet.'}</td></tr>}
             </tbody>
           </table>
         </div>
