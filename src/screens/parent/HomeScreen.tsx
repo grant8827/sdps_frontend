@@ -68,7 +68,7 @@ export function HomeScreen() {
         to="/parent/class"
       />
       <QuickAction
-        title="Notices"
+        title="Messages"
         subtitle="Announcements from school and teachers"
         badge={unreadCount}
         to="/parent/notices"

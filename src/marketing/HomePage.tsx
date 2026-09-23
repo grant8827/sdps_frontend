@@ -15,7 +15,7 @@ const FEATURES = [
   {
     icon: '🔔',
     title: 'Stay in the loop',
-    body: 'Notices from the school and teachers land right on your phone or in your browser — never a missed slip.',
+    body: 'Messages from the school and teachers land right on your phone or in your browser — never a missed slip.',
   },
   {
     icon: '📊',
@@ -46,14 +46,14 @@ const ROLES = [
   {
     icon: '👪',
     title: 'Parents',
-    body: 'Check kids in and out, see this week\'s attendance, and read notices from the school and homeroom.',
-    items: ['Drop-off & pick-up', 'Class & attendance', 'Notices'],
+    body: 'Check kids in and out, see this week\'s attendance, and read messages from the school and homeroom.',
+    items: ['Drop-off & pick-up', 'Class & attendance', 'Messages'],
   },
   {
     icon: '🍎',
     title: 'Teachers',
     body: 'Approve requests the moment they land, keep the class roster current, and message parents directly.',
-    items: ['Live queue', 'Class roster', 'Compose notices'],
+    items: ['Live queue', 'Class roster', 'Compose messages'],
   },
   {
     icon: '🏫',

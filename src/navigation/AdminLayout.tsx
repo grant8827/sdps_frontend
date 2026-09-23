@@ -12,7 +12,7 @@ export function AdminLayout() {
         { to: '/admin/classes', label: 'Classes' },
         { to: '/admin/families', label: 'Families' },
         { to: '/admin/students', label: 'Students' },
-        { to: '/admin/broadcast', label: 'Broadcast' },
+        { to: '/admin/notices', label: 'Messages' },
         { to: '/admin/setup', label: 'School Setup' },
       ]}
     >

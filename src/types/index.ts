@@ -34,6 +34,7 @@ export interface Child {
   photoUrl?: string;
   parentId?: string;
   teacherId: string;
+  teacherName?: string;
   gradeName?: string;
   className?: string;
   status: ChildStatus;

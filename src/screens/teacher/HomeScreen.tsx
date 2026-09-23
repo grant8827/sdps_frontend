@@ -50,7 +50,7 @@ export function HomeScreen() {
         to="/teacher/roster"
       />
       <QuickAction
-        title="Compose Notice"
+        title="Messages"
         subtitle="Message your class or a specific parent"
         to="/teacher/notices"
       />

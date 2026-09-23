@@ -17,13 +17,13 @@ import { HomeScreen as TeacherHomeScreen } from './screens/teacher/HomeScreen';
 import { LiveQueueScreen } from './screens/teacher/LiveQueueScreen';
 import { AttendanceScreen as TeacherAttendanceScreen } from './screens/teacher/AttendanceScreen';
 import { ClassRosterScreen } from './screens/teacher/ClassRosterScreen';
-import { ComposeNoticeScreen } from './screens/teacher/ComposeNoticeScreen';
+import { NoticesScreen as TeacherNoticesScreen } from './screens/teacher/NoticesScreen';
 
 import { AdminLayout } from './navigation/AdminLayout';
 import { OverviewScreen } from './screens/admin/OverviewScreen';
 import { FacultyManagementScreen } from './screens/admin/FacultyManagementScreen';
 import { FamilyManagementScreen } from './screens/admin/FamilyManagementScreen';
-import { BroadcastScreen } from './screens/admin/BroadcastScreen';
+import { NoticesScreen as AdminNoticesScreen } from './screens/admin/NoticesScreen';
 import { StudentManagementScreen } from './screens/admin/StudentManagementScreen';
 import { LiveQueueScreen as AdminLiveQueueScreen } from './screens/admin/LiveQueueScreen';
 import { ClassManagementScreen } from './screens/admin/ClassManagementScreen';
@@ -81,7 +81,7 @@ function AppRoutes() {
           <Route path="queue" element={<LiveQueueScreen />} />
           <Route path="attendance" element={<TeacherAttendanceScreen />} />
           <Route path="roster" element={<ClassRosterScreen />} />
-          <Route path="notices" element={<ComposeNoticeScreen />} />
+          <Route path="notices" element={<TeacherNoticesScreen />} />
         </Route>
       )}
 
@@ -93,7 +93,7 @@ function AppRoutes() {
           <Route path="classes" element={<ClassManagementScreen />} />
           <Route path="families" element={<FamilyManagementScreen />} />
           <Route path="students" element={<StudentManagementScreen />} />
-          <Route path="broadcast" element={<BroadcastScreen />} />
+          <Route path="notices" element={<AdminNoticesScreen />} />
           <Route path="setup" element={<SchoolSetupScreen />} />
         </Route>
       )}

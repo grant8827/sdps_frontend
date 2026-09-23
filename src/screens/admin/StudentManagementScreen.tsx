@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Screen } from '../../components/Screen';
 import { useAuth } from '../../context/AuthContext';
 import { AttendanceList } from '../../components/AttendanceList';
-import { api, type AdminSetup, type AttendanceRow, type SettableAttendanceStatus, type Student } from '../../services/api';
+import { SummaryTile } from '../../components/SummaryTile';
+import { api, type AdminSetup, type AttendanceRow, type AttendanceSummary, type SettableAttendanceStatus, type Student } from '../../services/api';
 
 interface DraftChild {
   firstName: string;
@@ -33,6 +34,7 @@ export function StudentManagementScreen() {
   const [search, setSearch] = useState('');
   const [attendanceClassId, setAttendanceClassId] = useState('');
   const [attendanceRows, setAttendanceRows] = useState<AttendanceRow[]>([]);
+  const [attendanceSummary, setAttendanceSummary] = useState<AttendanceSummary | null>(null);
   const activeYear = setup?.schoolYears.find(y => y.status === 'ACTIVE');
 
   const load = async () => {
@@ -57,12 +59,19 @@ export function StudentManagementScreen() {
     api.adminAttendance(token, attendanceClassId).then(setAttendanceRows).catch(error => setMessage(error.message));
   }, [token, attendanceClassId]);
 
+  useEffect(() => {
+    if (!token || tab !== 'attendance') return;
+    api.adminAttendanceSummary(token).then(setAttendanceSummary).catch(error => setMessage(error.message));
+  }, [token, tab]);
+
   const markAttendance = async (row: AttendanceRow, status: SettableAttendanceStatus) => {
     if (!token) return;
     setMessage('');
     try {
       await api.markAttendance(token, row.studentId, todayIso(), status);
-      setAttendanceRows(await api.adminAttendance(token, attendanceClassId));
+      const [nextRows, nextSummary] = await Promise.all([api.adminAttendance(token, attendanceClassId), api.adminAttendanceSummary(token)]);
+      setAttendanceRows(nextRows);
+      setAttendanceSummary(nextSummary);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Could not mark attendance');
     }
@@ -191,6 +200,15 @@ export function StudentManagementScreen() {
 
     {tab === 'attendance' && (
       <>
+        {attendanceSummary && (
+          <div className="tile-grid" style={{ marginBottom: 12 }}>
+            <SummaryTile label="Present Today" value={attendanceSummary.present} accentColor="var(--green)" />
+            <SummaryTile label="Absent Today" value={attendanceSummary.absent} accentColor="var(--red)" />
+            <SummaryTile label="Sick Today" value={attendanceSummary.sick} accentColor="var(--amber)" />
+            <SummaryTile label="Late Today" value={attendanceSummary.late} accentColor="var(--purple)" />
+          </div>
+        )}
+
         <div className="btn-row" style={{ alignItems: 'center', marginBottom: 12 }}>
           <p className="field-label" style={{ margin: 0 }}>Classroom</p>
           <select className="input" style={{ maxWidth: 260 }} value={attendanceClassId} onChange={e => setAttendanceClassId(e.target.value)}>

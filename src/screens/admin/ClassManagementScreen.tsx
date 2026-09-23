@@ -20,6 +20,7 @@ export function ClassManagementScreen() {
   const [promoteFromClassId, setPromoteFromClassId] = useState('');
   const [promoteToClassId, setPromoteToClassId] = useState('');
   const [promoteTeacherId, setPromoteTeacherId] = useState('');
+  const [activating, setActivating] = useState(false);
   const activeYear = setup?.schoolYears.find(y => y.status === 'ACTIVE');
   const nextYear = setup?.schoolYears.find(y => y.status === 'PLANNING');
 
@@ -43,13 +44,36 @@ export function ClassManagementScreen() {
 
   const set = (key: keyof typeof form, value: string) => setForm(current => ({ ...current, [key]: value }));
   const fromClassOptions = useMemo(() => classes.filter(c => c.schoolYearId === activeYear?.id), [classes, activeYear]);
+  // To Class is any class in the next year, same grade included — this
+  // is a manual move the admin can make anytime (e.g. splitting a grade
+  // across two classes), not restricted to promoting up a grade.
   const toClassOptions = useMemo(() => classes.filter(c => c.schoolYearId === nextYear?.id), [classes, nextYear]);
   const promoteToClass = classes.find(c => c.id === promoteToClassId);
+  const promotedIntoNextYear = useMemo(
+    () => classes.filter(c => c.schoolYearId === nextYear?.id).reduce((sum, c) => sum + c.studentCount, 0),
+    [classes, nextYear],
+  );
 
   // Pre-fill with the To class's current teacher (if any) whenever the
   // selected class changes — the admin can still pick someone else,
   // e.g. when the class doesn't have a teacher yet.
   useEffect(() => { setPromoteTeacherId(promoteToClass?.teacherId || ''); }, [promoteToClassId, classes]);
+
+  const runActivate = async () => {
+    if (!token || !nextYear) return;
+    if (!window.confirm(`Make "${nextYear.name}" the current school year? "${activeYear?.name}" will be closed, and parents and teachers will immediately see the new grades, classes, and teachers the next time they log in.`)) return;
+    setMessage('');
+    setActivating(true);
+    try {
+      await api.activateSchoolYear(token, nextYear.id);
+      setMessage(`"${nextYear.name}" is now the active school year.`);
+      await load();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Could not activate school year');
+    } finally {
+      setActivating(false);
+    }
+  };
 
   const runPromotion = async () => {
     if (!token || !promoteFromClassId || !promoteToClassId) return;
@@ -124,6 +148,19 @@ export function ClassManagementScreen() {
 
           <button type="button" className="btn btn-primary" disabled={!promoteFromClassId || !promoteToClassId} onClick={runPromotion}>
             Update
+          </button>
+        </div>
+      )}
+
+      {tab === 'promote' && nextYear && (
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <p className="form-title" style={{ marginBottom: 0 }}>Activate School Year</p>
+          <p className="quick-action-subtitle">{promotedIntoNextYear} student{promotedIntoNextYear === 1 ? '' : 's'} promoted into {nextYear.name} so far.</p>
+          <p className="field-label" style={{ margin: 0 }}>
+            Once every class has been promoted, activate {nextYear.name} to make it the current year — {activeYear?.name} will close, and parents and teachers will immediately see the new grades, classes, and teachers the next time they log in.
+          </p>
+          <button type="button" className="btn btn-primary" disabled={activating} onClick={runActivate}>
+            {activating ? 'Activating…' : `Activate ${nextYear.name} as Current Year`}
           </button>
         </div>
       )}

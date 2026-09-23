@@ -10,7 +10,7 @@ export function TeacherLayout() {
         { to: '/teacher/queue', label: 'Live Queue' },
         { to: '/teacher/attendance', label: 'Attendance' },
         { to: '/teacher/roster', label: 'Class' },
-        { to: '/teacher/notices', label: 'Notices' },
+        { to: '/teacher/notices', label: 'Messages' },
       ]}
     >
       <Outlet />

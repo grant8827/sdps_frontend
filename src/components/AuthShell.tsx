@@ -15,7 +15,7 @@ const FEATURES: { icon: string; title: string; body: string }[] = [
   {
     icon: '🔔',
     title: 'Stay in the loop',
-    body: 'Notices from the school and teachers, right on your screen.',
+    body: 'Messages from the school and teachers, right on your screen.',
   },
 ];
 

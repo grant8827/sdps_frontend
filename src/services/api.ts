@@ -76,6 +76,8 @@ export const api = {
     request<{ promoted: number; skipped: number }>('/admin/promotions/by-grade', { method: 'POST', body: JSON.stringify(input) }, token),
   promoteByClass: (token: string, input: { fromClassId: string; toClassId: string; teacherUserId?: string }) =>
     request<{ promoted: number; skipped: number }>('/admin/promotions/by-class', { method: 'POST', body: JSON.stringify(input) }, token),
+  activateSchoolYear: (token: string, schoolYearId: string) =>
+    request<void>(`/admin/school-years/${schoolYearId}/activate`, { method: 'POST' }, token),
   guardians: (token: string) => request<Guardian[]>('/admin/guardians', {}, token),
   addGuardian: (token: string, input: { fullName: string; email: string; phone?: string; temporaryPassword: string }) =>
     request<{ id: string }>('/admin/guardians', { method: 'POST', body: JSON.stringify(input) }, token),
@@ -88,6 +90,8 @@ export const api = {
   teacherAttendanceHistory: (token: string) => request<TeacherAttendanceStudent[]>('/teacher/attendance-history', {}, token),
   adminAttendance: (token: string, classId: string, date?: string) =>
     request<AttendanceRow[]>(`/admin/attendance?classId=${encodeURIComponent(classId)}${date ? `&date=${date}` : ''}`, {}, token),
+  adminAttendanceSummary: (token: string, date?: string) =>
+    request<AttendanceSummary>(`/admin/attendance/summary${date ? `?date=${date}` : ''}`, {}, token),
   markAttendance: (token: string, studentId: string, date: string, status: SettableAttendanceStatus) =>
     request<void>('/attendance', { method: 'POST', body: JSON.stringify({ studentId, date, status }) }, token),
   classes: (token: string) => request<ClassRow[]>('/admin/classes', {}, token),
@@ -98,8 +102,14 @@ export const api = {
     request<{ id: string }>('/admin/teachers', { method: 'POST', body: JSON.stringify(input) }, token),
   updateTeacher: (token: string, teacherId: string, input: { fullName?: string; photoDataUrl?: string; classId?: string | null }) =>
     request<void>(`/admin/teachers/${teacherId}`, { method: 'PATCH', body: JSON.stringify(input) }, token),
+  staff: (token: string) => request<StaffRow[]>('/admin/staff', {}, token),
+  addStaff: (token: string, input: { fullName: string; email: string; password: string; photoDataUrl?: string; classId?: string; role: StaffRole }) =>
+    request<{ id: string }>('/admin/staff', { method: 'POST', body: JSON.stringify(input) }, token),
+  setStaffStatus: (token: string, staffId: string, active: boolean) =>
+    request<void>(`/admin/staff/${staffId}`, { method: 'PATCH', body: JSON.stringify({ active }) }, token),
+  deleteStaff: (token: string, staffId: string) => request<void>(`/admin/staff/${staffId}`, { method: 'DELETE' }, token),
   teacherParents: (token: string) => request<{ id: string; fullName: string }[]>('/teacher/parents', {}, token),
-  sendNotice: (token: string, input: { title: string; body: string; targetType: 'SCHOOL' | 'CLASS' | 'PARENT'; targetParentUserId?: string }) =>
+  sendNotice: (token: string, input: { title: string; body: string; targetType: 'SCHOOL' | 'CLASS' | 'PARENT' | 'STAFF' | 'ADMIN' | 'TEACHER'; targetParentUserId?: string; targetStaffUserId?: string }) =>
     request<void>('/notices', { method: 'POST', body: JSON.stringify(input) }, token),
   myNotices: (token: string) =>
     request<(Omit<Notice, 'read'> & { read: number })[]>('/me/notices', {}, token)
@@ -109,6 +119,10 @@ export const api = {
     request<{ id: string }>('/me/guardians', { method: 'POST', body: JSON.stringify(input) }, token),
   adminNotices: (token: string) =>
     request<(Omit<Notice, 'read'> & { read: number })[]>('/admin/notices', {}, token)
+      .then(rows => rows.map(row => ({ ...row, read: Boolean(row.read) }))),
+  /** Staff inbox — shared by the admin dashboard's Notices tab and the teacher app's Notices tab. */
+  staffNotices: (token: string) =>
+    request<(Omit<Notice, 'read'> & { read: number })[]>('/staff/notices', {}, token)
       .then(rows => rows.map(row => ({ ...row, read: Boolean(row.read) }))),
 };
 
@@ -162,7 +176,10 @@ export interface AttendanceRow {
   classId: string;
   className: string;
   status: SettableAttendanceStatus | 'UNMARKED';
+  /** Arrived after the school's start time — only meaningful when status is PRESENT. */
+  late: boolean;
 }
+export interface AttendanceSummary { present: number; absent: number; sick: number; late: number; unmarked: number; total: number }
 export interface TeacherClass { id: string; name: string; roomName: string | null; gradeName: string }
 export interface RosterStudent { id: string; fullName: string; photoUrl?: string; status: 'ACTIVE' | 'SUSPENDED' }
 export interface TeacherAttendanceStudent {
@@ -180,6 +197,8 @@ export interface MyAttendanceChild {
 export interface PromotionPreview { studentId: string; fullName: string; fromGrade: string; proposedGrade: { id: string; name: string } | null; alreadyEnrolled: boolean }
 export interface Guardian {
   id: string;
+  /** The underlying user id — what notices target (target_parent_user_id), distinct from the guardian record's own id. */
+  userId: string;
   fullName: string;
   email: string;
   phone?: string;
@@ -205,6 +224,19 @@ export interface TeacherRow {
   email: string;
   photoUrl?: string;
   active: boolean;
+  classId?: string;
+  className?: string;
+}
+/** Role sent to POST /admin/staff — 'admin' and 'front_desk' both land on the admin dashboard; only 'teacher' can take a classId. */
+export type StaffRole = 'teacher' | 'admin' | 'front_desk';
+export interface StaffRow {
+  id: string;
+  fullName: string;
+  email: string;
+  photoUrl?: string;
+  active: boolean;
+  /** Raw membership role as stored — 'school_admin' is the Admin role, 'staff' is Front Desk / Office Staff. */
+  role: 'teacher' | 'school_admin' | 'staff';
   classId?: string;
   className?: string;
 }

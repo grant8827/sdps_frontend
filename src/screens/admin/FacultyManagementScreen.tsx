@@ -1,37 +1,45 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Screen } from '../../components/Screen';
 import { useAuth } from '../../context/AuthContext';
-import { api, type ClassRow, type TeacherRow } from '../../services/api';
+import { api, type ClassRow, type StaffRole, type StaffRow } from '../../services/api';
 
-const emptyForm = { fullName: '', email: '', password: '', classId: '', photoDataUrl: '' };
+const emptyForm = { fullName: '', email: '', password: '', classId: '', photoDataUrl: '', role: 'teacher' as StaffRole };
+
+const ROLE_LABELS: Record<StaffRow['role'], string> = { teacher: 'Teacher', school_admin: 'Admin', staff: 'Front Desk / Office Staff' };
+const ROLE_OPTIONS: { value: StaffRole; label: string }[] = [
+  { value: 'teacher', label: 'Teacher' },
+  { value: 'admin', label: 'Admin' },
+  { value: 'front_desk', label: 'Front Desk / Office Staff' },
+];
+
+type Tab = 'staff' | 'register';
 
 /**
- * Admin Faculty Management (Add/Edit Teachers). Password is required
- * when creating a teacher (it's their login); the photo is optional.
- * The classroom field is a dropdown sourced from real classes (set up
- * on the Classes tab) rather than free text, and only offers rooms
- * that don't already have a different teacher — reassigning an
- * occupied room isn't a one-click action here.
+ * Admin Faculty screen: the Staff tab lists everyone with a staff-level
+ * account (teachers, admins, front desk) with suspend/delete actions;
+ * Add Staff creates one, with a role picker that decides what kind of
+ * account they get (teacher login vs admin-dashboard login) — the
+ * classroom field only makes sense, and only shows, for the Teacher role.
  */
 export function FacultyManagementScreen() {
   const { token } = useAuth();
-  const [teachers, setTeachers] = useState<TeacherRow[]>([]);
+  const [tab, setTab] = useState<Tab>('staff');
+  const [staff, setStaff] = useState<StaffRow[]>([]);
   const [classes, setClasses] = useState<ClassRow[]>([]);
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const load = async () => {
     if (!token) return;
-    const [nextTeachers, nextClasses] = await Promise.all([api.teachers(token), api.classes(token)]);
-    setTeachers(nextTeachers);
+    const [nextStaff, nextClasses] = await Promise.all([api.staff(token), api.classes(token)]);
+    setStaff(nextStaff);
     setClasses(nextClasses);
   };
   useEffect(() => { load().catch(error => setMessage(error.message)); }, [token]);
 
-  const availableClasses = useMemo(() => classes.filter(c => !c.teacherId || c.teacherId === editingId), [classes, editingId]);
-  const set = (key: keyof typeof form, value: string) => setForm(current => ({ ...current, [key]: value }));
+  const availableClasses = useMemo(() => classes.filter(c => !c.teacherId), [classes]);
+  const set = <K extends keyof typeof form>(key: K, value: typeof form[K]) => setForm(current => ({ ...current, [key]: value }));
 
   const onPhotoSelected = (file: File | undefined) => {
     if (!file) return;
@@ -40,92 +48,111 @@ export function FacultyManagementScreen() {
     reader.readAsDataURL(file);
   };
 
-  const resetForm = () => { setEditingId(null); setForm(emptyForm); };
-
-  const startEdit = (teacher: TeacherRow) => {
-    setEditingId(teacher.id);
-    setForm({ fullName: teacher.fullName, email: teacher.email, password: '', classId: teacher.classId || '', photoDataUrl: teacher.photoUrl || '' });
-  };
-
   const submit = async () => {
     if (!token) return;
     setMessage('');
-    if (!form.fullName.trim()) { setMessage('Full name is required.'); return; }
+    if (!form.fullName.trim() || !form.email.trim() || !form.password) { setMessage('Full name, email, and password are required.'); return; }
     setSubmitting(true);
     try {
-      if (editingId) {
-        await api.updateTeacher(token, editingId, { fullName: form.fullName, photoDataUrl: form.photoDataUrl || undefined, classId: form.classId || null });
-        setMessage('Teacher updated.');
-      } else {
-        if (!form.email.trim() || !form.password) { setMessage('Email and password are required.'); setSubmitting(false); return; }
-        await api.addTeacher(token, { fullName: form.fullName, email: form.email, password: form.password, photoDataUrl: form.photoDataUrl || undefined, classId: form.classId || undefined });
-        setMessage('Teacher added.');
-      }
-      resetForm();
+      await api.addStaff(token, {
+        fullName: form.fullName,
+        email: form.email,
+        password: form.password,
+        photoDataUrl: form.photoDataUrl || undefined,
+        role: form.role,
+        classId: form.role === 'teacher' ? form.classId || undefined : undefined,
+      });
+      setMessage(`${ROLE_LABELS[form.role === 'admin' ? 'school_admin' : form.role === 'front_desk' ? 'staff' : 'teacher']} added.`);
+      setForm(emptyForm);
+      setTab('staff');
       await load();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Could not save teacher');
+      setMessage(error instanceof Error ? error.message : 'Could not add staff member');
     } finally {
       setSubmitting(false);
     }
   };
 
+  const toggleSuspend = async (member: StaffRow) => {
+    if (!token) return;
+    try { await api.setStaffStatus(token, member.id, !member.active); await load(); }
+    catch (error) { setMessage(error instanceof Error ? error.message : 'Could not update staff member'); }
+  };
+  const remove = async (member: StaffRow) => {
+    if (!token || !window.confirm(`Delete ${member.fullName}? This removes their account and cannot be undone.`)) return;
+    try { await api.deleteStaff(token, member.id); await load(); }
+    catch (error) { setMessage(error instanceof Error ? error.message : 'Could not delete staff member'); }
+  };
+
   return (
-    <Screen title="Faculty" subtitle="Add teachers and assign their classroom.">
-      <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <p className="form-title" style={{ marginBottom: 0, fontSize: 15 }}>
-          {editingId ? 'Edit Teacher' : 'Add Teacher'}
-        </p>
-
-        <div className="btn-row" style={{ alignItems: 'center' }}>
-          {form.photoDataUrl
-            ? <img src={form.photoDataUrl} alt="" className="avatar avatar-lg" />
-            : <span className="avatar avatar-lg avatar-placeholder">{form.fullName.charAt(0) || '?'}</span>}
-          <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}>
-            Upload photo (optional)
-            <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => onPhotoSelected(e.target.files?.[0])} />
-          </label>
-        </div>
-
-        <input className="input" placeholder="Full Name" value={form.fullName} onChange={e => set('fullName', e.target.value)} />
-        <input className="input" placeholder="Email" type="email" value={form.email} disabled={!!editingId} onChange={e => set('email', e.target.value)} />
-        {!editingId && <input className="input" placeholder="Password" type="password" value={form.password} onChange={e => set('password', e.target.value)} />}
-        <select className="input" value={form.classId} onChange={e => set('classId', e.target.value)}>
-          <option value="">No classroom assigned yet</option>
-          {availableClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
-
-        <div className="btn-row">
-          {editingId && (
-            <button type="button" className="btn btn-secondary" onClick={resetForm}>
-              Cancel
-            </button>
-          )}
-          <button type="button" className="btn btn-primary" onClick={submit} disabled={submitting}>
-            {submitting ? 'Saving…' : editingId ? 'Save Changes' : 'Add Teacher'}
-          </button>
-        </div>
+    <Screen title="Faculty" subtitle="Manage teachers, admins, and office staff.">
+      <div className="subtabs">
+        <button type="button" className={`subtab${tab === 'staff' ? ' subtab-active' : ''}`} onClick={() => setTab('staff')}>Staff</button>
+        <button type="button" className={`subtab${tab === 'register' ? ' subtab-active' : ''}`} onClick={() => setTab('register')}>Add Staff</button>
       </div>
-
       {message && <div className="card">{message}</div>}
 
-      {teachers.map(teacher => (
-        <button
-          key={teacher.id}
-          type="button"
-          className="card"
-          style={{ textAlign: 'left', width: '100%', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12 }}
-          onClick={() => startEdit(teacher)}
-        >
-          {teacher.photoUrl
-            ? <img src={teacher.photoUrl} alt="" className="avatar" />
-            : <span className="avatar avatar-placeholder">{teacher.fullName.charAt(0)}</span>}
-          <span style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <span className="quick-action-title">{teacher.fullName}</span>
-            <span className="quick-action-subtitle">{teacher.className || 'Unassigned'} · {teacher.email}</span>
-          </span>
-        </button>
-      ))}
+      {tab === 'register' && (
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <p className="form-title" style={{ marginBottom: 0 }}>Add Staff</p>
+
+          <div className="btn-row" style={{ alignItems: 'center' }}>
+            {form.photoDataUrl
+              ? <img src={form.photoDataUrl} alt="" className="avatar avatar-lg" />
+              : <span className="avatar avatar-lg avatar-placeholder">{form.fullName.charAt(0) || '?'}</span>}
+            <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}>
+              Upload photo (optional)
+              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => onPhotoSelected(e.target.files?.[0])} />
+            </label>
+          </div>
+
+          <p className="field-label" style={{ margin: 0 }}>Role</p>
+          <select className="input" value={form.role} onChange={e => set('role', e.target.value as StaffRole)}>
+            {ROLE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+
+          <input className="input" placeholder="Full Name" value={form.fullName} onChange={e => set('fullName', e.target.value)} />
+          <input className="input" placeholder="Email" type="email" value={form.email} onChange={e => set('email', e.target.value)} />
+          <input className="input" placeholder="Password" type="password" value={form.password} onChange={e => set('password', e.target.value)} />
+
+          {form.role === 'teacher' && (
+            <select className="input" value={form.classId} onChange={e => set('classId', e.target.value)}>
+              <option value="">No classroom assigned yet</option>
+              {availableClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          )}
+
+          <button type="button" className="btn btn-primary" onClick={submit} disabled={submitting}>
+            {submitting ? 'Adding…' : 'Add Staff'}
+          </button>
+        </div>
+      )}
+
+      {tab === 'staff' && (
+        <div className="table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr><th /><th>Name</th><th>Role</th><th>Class</th><th>Status</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+              {staff.map(member => (
+                <tr key={member.id}>
+                  <td>{member.photoUrl ? <img src={member.photoUrl} alt="" className="avatar" /> : <span className="avatar avatar-placeholder">{member.fullName.charAt(0)}</span>}</td>
+                  <td>{member.fullName}</td>
+                  <td>{ROLE_LABELS[member.role]}</td>
+                  <td>{member.className || '—'}</td>
+                  <td><span className="pill" style={{ backgroundColor: member.active ? 'var(--green)' : 'var(--red)' }}>{member.active ? 'Active' : 'Suspended'}</span></td>
+                  <td className="actions-cell">
+                    <button type="button" className="btn btn-secondary btn-sm" onClick={() => toggleSuspend(member)}>{member.active ? 'Suspend' : 'Reactivate'}</button>
+                    <button type="button" className="btn btn-danger btn-sm" onClick={() => remove(member)}>Delete</button>
+                  </td>
+                </tr>
+              ))}
+              {staff.length === 0 && <tr><td colSpan={6} className="empty-text">No staff added yet.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      )}
     </Screen>
   );
 }

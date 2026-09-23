@@ -16,7 +16,7 @@ function ParentShell() {
         { to: '/parent', label: 'Home', end: true },
         { to: '/parent/dropoff-pickup', label: 'Dropoff/Pickup' },
         { to: '/parent/class', label: 'Class' },
-        { to: '/parent/notices', label: 'Notices', badge: unreadCount },
+        { to: '/parent/notices', label: 'Messages', badge: unreadCount },
         { to: '/parent/add-guardian', label: 'Add Guardian' },
       ]}
     >
