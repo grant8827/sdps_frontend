@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react';
 import { Screen } from '../../components/Screen';
 import { useAuth } from '../../context/AuthContext';
-import { api, type Guardian } from '../../services/api';
+import { api, type Guardian, type GuardianRequest } from '../../services/api';
+import { GuardianRequestsPanel } from './GuardianRequestsPanel';
 
-type Tab = 'list' | 'register';
+type Tab = 'list' | 'register' | 'approvals';
 
-/** Admin Family Management: view/suspend/delete parents, and register new ones. Children get linked to a parent from the Students tab's registration form. */
+/** Admin Family Management: view/suspend/delete parents, register new ones, and approve adults that parents asked to have authorized. Children get linked to a parent from the Students tab's registration form. */
 export function FamilyManagementScreen() {
-  const { token } = useAuth();
+  const { token, canManageSchool } = useAuth();
   const [tab, setTab] = useState<Tab>('list');
   const [guardians, setGuardians] = useState<Guardian[]>([]);
+  const [requests, setRequests] = useState<GuardianRequest[]>([]);
   const [message, setMessage] = useState('');
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
@@ -19,7 +21,9 @@ export function FamilyManagementScreen() {
   const load = async () => {
     if (!token) return;
     setGuardians(await api.guardians(token));
+    if (canManageSchool) setRequests(await api.guardianRequests(token));
   };
+  const pendingCount = requests.filter(r => r.status === 'PENDING').length;
   useEffect(() => { load().catch(error => setMessage(error.message)); }, [token]);
 
   const registerParent = async () => {
@@ -48,7 +52,12 @@ export function FamilyManagementScreen() {
     <Screen title="Families" subtitle="Register parents and manage their accounts.">
       <div className="subtabs">
         <button type="button" className={`subtab${tab === 'list' ? ' subtab-active' : ''}`} onClick={() => setTab('list')}>Parents</button>
-        <button type="button" className={`subtab${tab === 'register' ? ' subtab-active' : ''}`} onClick={() => setTab('register')}>Add Parent</button>
+        {canManageSchool && <button type="button" className={`subtab${tab === 'register' ? ' subtab-active' : ''}`} onClick={() => setTab('register')}>Add Parent</button>}
+        {canManageSchool && (
+          <button type="button" className={`subtab${tab === 'approvals' ? ' subtab-active' : ''}`} onClick={() => setTab('approvals')}>
+            Pending Approvals{pendingCount > 0 ? ` (${pendingCount})` : ''}
+          </button>
+        )}
       </div>
       {message && <div className="card">{message}</div>}
 
@@ -63,6 +72,8 @@ export function FamilyManagementScreen() {
           <button type="button" className="btn btn-primary" onClick={registerParent}>Register Parent</button>
         </div>
       )}
+
+      {tab === 'approvals' && <GuardianRequestsPanel requests={requests} onChanged={load} />}
 
       {tab === 'list' && (
         <div className="table-wrap">
@@ -79,8 +90,12 @@ export function FamilyManagementScreen() {
                   <td>{guardian.children.length ? guardian.children.map(c => c.fullName).join(', ') : 'None linked'}</td>
                   <td><span className="pill" style={{ backgroundColor: guardian.active ? 'var(--green)' : 'var(--red)' }}>{guardian.active ? 'Active' : 'Suspended'}</span></td>
                   <td className="actions-cell">
-                    <button type="button" className="btn btn-secondary btn-sm" onClick={() => toggleSuspend(guardian)}>{guardian.active ? 'Suspend' : 'Reactivate'}</button>
-                    <button type="button" className="btn btn-danger btn-sm" onClick={() => remove(guardian)}>Delete</button>
+                    {canManageSchool ? (
+                      <>
+                        <button type="button" className="btn btn-secondary btn-sm" onClick={() => toggleSuspend(guardian)}>{guardian.active ? 'Suspend' : 'Reactivate'}</button>
+                        <button type="button" className="btn btn-danger btn-sm" onClick={() => remove(guardian)}>Delete</button>
+                      </>
+                    ) : '—'}
                   </td>
                 </tr>
               ))}

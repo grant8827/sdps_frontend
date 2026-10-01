@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { SiteFooter } from './SiteFooter';
 
 const FEATURES: { icon: string; title: string; body: string }[] = [
   {
@@ -58,6 +59,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
           </Link>
           {children}
         </div>
+        <SiteFooter compact />
       </main>
     </div>
   );

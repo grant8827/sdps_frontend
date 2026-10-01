@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { TopBar } from './TopBar';
 import { Sidebar, type TabDef } from './Sidebar';
+import { SiteFooter } from '../components/SiteFooter';
 
 /**
  * Shared shell for every role's web dashboard (Admin/Parent/Teacher):
@@ -17,7 +18,10 @@ export function DashboardShell({ tabs, children }: { tabs: TabDef[]; children: R
       <TopBar menuOpen={menuOpen} onToggleMenu={() => setMenuOpen(open => !open)} />
       <div className="app-body">
         <Sidebar tabs={tabs} open={menuOpen} onNavigate={() => setMenuOpen(false)} />
-        <main className="app-content">{children}</main>
+        <main className="app-content">
+          {children}
+          <SiteFooter compact />
+        </main>
       </div>
     </div>
   );

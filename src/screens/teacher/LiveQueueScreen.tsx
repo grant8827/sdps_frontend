@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Screen } from '../../components/Screen';
 import { useAuth } from '../../context/AuthContext';
-import { QueueList } from '../../components/QueueList';
+import { QueueList, type QueueVerification } from '../../components/QueueList';
 import { api } from '../../services/api';
 import type { QueueItem } from '../../types';
 
@@ -32,16 +32,18 @@ export function LiveQueueScreen() {
     return () => { cancelled = true; clearInterval(interval); };
   }, [token]);
 
-  const approve = async (item: QueueItem) => {
+  // Errors propagate to QueueList, which shows them on the card (e.g. a
+  // wrong pickup code); the queue is refreshed either way.
+  const approve = async (item: QueueItem, verification: QueueVerification) => {
     if (!token) return;
-    try { await api.approveQueueItem(token, item.id); setQueue(await api.teacherQueue(token)); }
-    catch { /* next poll will reconcile */ }
+    try { await api.approveQueueItem(token, item.id, verification); }
+    finally { api.teacherQueue(token).then(setQueue).catch(() => {}); }
   };
 
   const decline = async (item: QueueItem) => {
     if (!token) return;
-    try { await api.declineQueueItem(token, item.id); setQueue(await api.teacherQueue(token)); }
-    catch { /* next poll will reconcile */ }
+    try { await api.declineQueueItem(token, item.id); }
+    finally { api.teacherQueue(token).then(setQueue).catch(() => {}); }
   };
 
   const visible = queue.filter(item => item.requestType === tab);

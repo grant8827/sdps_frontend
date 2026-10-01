@@ -2,17 +2,22 @@ import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { AuthShell } from '../../components/AuthShell';
+import { MfaSignInStep } from '../../components/MfaSignInStep';
+import type { MfaChallenge } from '../../types';
 
 /**
- * Login by email/phone + password. On success, the router reads the
- * resulting user's role and routes to the matching Parent / Teacher /
- * Admin layout automatically. Ported from mobile_app's LoginScreen.
+ * Login by email/phone + password, then — for accounts with two-step
+ * verification (always for admins) — a code from the authenticator app
+ * (MfaSignInStep). On success, the router reads the resulting user's
+ * role and routes to the matching Parent / Teacher / Admin layout
+ * automatically. Ported from mobile_app's LoginScreen.
  *
  * Local demo accounts use admin@school.test, teacher@school.test, or
  * parent@school.test with password "password".
  */
 export function LoginScreen() {
-  const { login, isAuthenticating } = useAuth();
+  const { login, adoptSession, isAuthenticating } = useAuth();
+  const [challenge, setChallenge] = useState<MfaChallenge | null>(null);
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -25,11 +30,25 @@ export function LoginScreen() {
       return;
     }
     try {
-      await login(identifier, password);
-    } catch {
-      setError('Login failed. Please try again.');
+      setChallenge(await login(identifier, password));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed. Please try again.');
     }
   };
+
+  if (challenge) {
+    return (
+      <AuthShell>
+        <div className="form-card">
+          <MfaSignInStep
+            challenge={challenge}
+            onSignedIn={adoptSession}
+            onRestart={message => { setChallenge(null); setPassword(''); setError(message); }}
+          />
+        </div>
+      </AuthShell>
+    );
+  }
 
   return (
     <AuthShell>

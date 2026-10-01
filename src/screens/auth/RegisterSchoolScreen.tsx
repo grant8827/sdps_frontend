@@ -2,7 +2,9 @@ import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { AuthShell } from '../../components/AuthShell';
+import { MfaSignInStep } from '../../components/MfaSignInStep';
 import { api } from '../../services/api';
+import { isMfaChallenge, type MfaChallenge } from '../../types';
 
 const emptyForm = {
   schoolName: '',
@@ -16,15 +18,17 @@ const emptyForm = {
 
 /**
  * Public self-service signup: a brand-new school registers its first
- * campus and its own admin account in one step. On success the backend
- * signs them straight in (see api.registerSchool), so this just adopts
- * that session and the router takes it from there to /admin.
+ * campus and its own admin account in one step. Admins must use two-step
+ * verification, so the backend answers with a setup challenge: the new
+ * admin sets up their authenticator app here (MfaSignInStep), and the
+ * resulting session takes them on to /admin.
  */
 export function RegisterSchoolScreen() {
   const { adoptSession } = useAuth();
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [challenge, setChallenge] = useState<MfaChallenge | null>(null);
 
   const set = (key: keyof typeof form, value: string) => setForm(current => ({ ...current, [key]: value }));
 
@@ -47,7 +51,7 @@ export function RegisterSchoolScreen() {
 
     setSubmitting(true);
     try {
-      const session = await api.registerSchool({
+      const result = await api.registerSchool({
         schoolName: form.schoolName,
         campusName: form.campusName,
         campusAddress: form.campusAddress || undefined,
@@ -55,13 +59,29 @@ export function RegisterSchoolScreen() {
         email: form.email,
         password: form.password,
       });
-      await adoptSession(session);
+      if (isMfaChallenge(result)) setChallenge(result);
+      else await adoptSession(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not register your school. Please try again.');
     } finally {
       setSubmitting(false);
     }
   };
+
+  if (challenge) {
+    return (
+      <AuthShell>
+        <div className="form-card">
+          <p className="form-subtitle" style={{ color: 'var(--green)' }}>Your school is registered. One last step:</p>
+          <MfaSignInStep
+            challenge={challenge}
+            onSignedIn={adoptSession}
+            onRestart={message => { setChallenge(null); setError(`${message} Your school was created — sign in from the login page to finish.`); }}
+          />
+        </div>
+      </AuthShell>
+    );
+  }
 
   return (
     <AuthShell>

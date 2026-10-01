@@ -22,7 +22,7 @@ const todayIso = () => new Date().toISOString().slice(0, 10);
 type Tab = 'list' | 'attendance' | 'register';
 
 export function StudentManagementScreen() {
-  const { token } = useAuth();
+  const { token, canManageSchool } = useAuth();
   const [tab, setTab] = useState<Tab>('list');
   const [setup, setSetup] = useState<AdminSetup | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
@@ -136,6 +136,11 @@ export function StudentManagementScreen() {
     }
   };
 
+  const exportRecord = async (student: Student) => {
+    if (!token) return;
+    try { await api.exportStudent(token, student.id); }
+    catch (error) { setMessage(error instanceof Error ? error.message : 'Could not export the record'); }
+  };
   const toggleSuspend = async (student: Student) => {
     if (!token) return;
     const nextStatus = student.enrollmentStatus === 'SUSPENDED' ? 'ACTIVE' : 'SUSPENDED';
@@ -143,7 +148,7 @@ export function StudentManagementScreen() {
     catch (error) { setMessage(error instanceof Error ? error.message : 'Could not update student'); }
   };
   const remove = async (student: Student) => {
-    if (!token || !window.confirm(`Delete ${student.fullName}? This removes their enrollment and parent links and cannot be undone.`)) return;
+    if (!token || !window.confirm(`Remove ${student.fullName}? They'll disappear from class lists and the queue. You can restore them, or delete their record permanently, from Data & Privacy.`)) return;
     try { await api.deleteStudent(token, student.id); await load(); }
     catch (error) { setMessage(error instanceof Error ? error.message : 'Could not delete student'); }
   };
@@ -152,7 +157,7 @@ export function StudentManagementScreen() {
     <div className="subtabs">
       <button type="button" className={`subtab${tab === 'list' ? ' subtab-active' : ''}`} onClick={() => setTab('list')}>Students</button>
       <button type="button" className={`subtab${tab === 'attendance' ? ' subtab-active' : ''}`} onClick={() => setTab('attendance')}>Attendance</button>
-      <button type="button" className={`subtab${tab === 'register' ? ' subtab-active' : ''}`} onClick={() => setTab('register')}>Register a Student</button>
+      {canManageSchool && <button type="button" className={`subtab${tab === 'register' ? ' subtab-active' : ''}`} onClick={() => setTab('register')}>Register a Student</button>}
     </div>
     {message && <div className="card">{message}</div>}
 
@@ -245,8 +250,13 @@ export function StudentManagementScreen() {
                   <td>{student.guardians.length ? student.guardians.map(g => g.fullName).join(', ') : 'No parent linked'}</td>
                   <td><span className="pill" style={{ backgroundColor: student.enrollmentStatus === 'SUSPENDED' ? 'var(--red)' : 'var(--green)' }}>{student.enrollmentStatus === 'SUSPENDED' ? 'Suspended' : 'Active'}</span></td>
                   <td className="actions-cell">
-                    <button type="button" className="btn btn-secondary btn-sm" onClick={() => toggleSuspend(student)}>{student.enrollmentStatus === 'SUSPENDED' ? 'Reactivate' : 'Suspend'}</button>
-                    <button type="button" className="btn btn-danger btn-sm" onClick={() => remove(student)}>Delete</button>
+                    {canManageSchool ? (
+                      <>
+                        <button type="button" className="btn btn-secondary btn-sm" onClick={() => toggleSuspend(student)}>{student.enrollmentStatus === 'SUSPENDED' ? 'Reactivate' : 'Suspend'}</button>
+                        <button type="button" className="btn btn-secondary btn-sm" onClick={() => exportRecord(student)}>Export</button>
+                        <button type="button" className="btn btn-danger btn-sm" onClick={() => remove(student)}>Remove</button>
+                      </>
+                    ) : '—'}
                   </td>
                 </tr>
               ))}

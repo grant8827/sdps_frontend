@@ -28,6 +28,11 @@ import { StudentManagementScreen } from './screens/admin/StudentManagementScreen
 import { LiveQueueScreen as AdminLiveQueueScreen } from './screens/admin/LiveQueueScreen';
 import { ClassManagementScreen } from './screens/admin/ClassManagementScreen';
 import { SchoolSetupScreen } from './screens/admin/SchoolSetupScreen';
+import { AuditLogScreen } from './screens/admin/AuditLogScreen';
+import { SecurityScreen } from './screens/shared/SecurityScreen';
+import { DataPrivacyScreen } from './screens/admin/DataPrivacyScreen';
+import { DistrictOverviewScreen } from './screens/admin/DistrictOverviewScreen';
+import { LegalPage } from './legal/LegalPage';
 
 /**
  * Root router — the web equivalent of mobile_app's RootNavigator.
@@ -52,6 +57,7 @@ function AppRoutes() {
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginScreen />} />
         <Route path="/register" element={<RegisterSchoolScreen />} />
+        <Route path="/legal/:slug" element={<LegalPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );
@@ -64,6 +70,7 @@ function AppRoutes() {
       <Route path="/" element={<Navigate to={homePath} replace />} />
       <Route path="/login" element={<Navigate to={homePath} replace />} />
       <Route path="/register" element={<Navigate to={homePath} replace />} />
+      <Route path="/legal/:slug" element={<LegalPage />} />
 
       {user.role === 'parent' && (
         <Route path="/parent" element={<ParentLayout />}>
@@ -72,6 +79,7 @@ function AppRoutes() {
           <Route path="class" element={<ClassAttendanceScreen />} />
           <Route path="notices" element={<NoticesScreen />} />
           <Route path="add-guardian" element={<AddGuardianScreen />} />
+          <Route path="security" element={<SecurityScreen />} />
         </Route>
       )}
 
@@ -82,6 +90,7 @@ function AppRoutes() {
           <Route path="attendance" element={<TeacherAttendanceScreen />} />
           <Route path="roster" element={<ClassRosterScreen />} />
           <Route path="notices" element={<TeacherNoticesScreen />} />
+          <Route path="security" element={<SecurityScreen />} />
         </Route>
       )}
 
@@ -95,6 +104,10 @@ function AppRoutes() {
           <Route path="students" element={<StudentManagementScreen />} />
           <Route path="notices" element={<AdminNoticesScreen />} />
           <Route path="setup" element={<SchoolSetupScreen />} />
+          <Route path="audit-log" element={<AuditLogScreen />} />
+          <Route path="data" element={<DataPrivacyScreen />} />
+          <Route path="district" element={<DistrictOverviewScreen />} />
+          <Route path="security" element={<SecurityScreen />} />
         </Route>
       )}
 

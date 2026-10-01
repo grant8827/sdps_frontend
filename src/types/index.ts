@@ -11,7 +11,27 @@ export interface User {
   fullName: string;
   email: string;
   role: Role;
+  /**
+   * Per-school roles from the login response — 'school_admin', 'staff'
+   * (front desk), 'teacher', 'parent', 'platform_super_admin', or
+   * 'district_admin' (one entry per school in their district).
+   */
+  memberships?: { schoolId: string; role: string; schoolName?: string; districtName?: string | null }[];
 }
+
+/**
+ * What sign-in returns when the password was right but a second step is
+ * owed: enter an authenticator code (mfaRequired), or — for an account
+ * that must use two-step verification and hasn't set it up — enroll
+ * first (mfaSetupRequired). mfaToken identifies this half-finished sign-in.
+ */
+export interface MfaChallenge {
+  mfaRequired?: boolean;
+  mfaSetupRequired?: boolean;
+  mfaToken: string;
+}
+export type LoginResult = AuthSession | MfaChallenge;
+export const isMfaChallenge = (result: LoginResult): result is MfaChallenge => 'mfaToken' in result;
 
 export interface AuthSession {
   token: string;
@@ -42,6 +62,8 @@ export interface Child {
   latitude?: number | null;
   longitude?: number | null;
   geofenceRadius?: number | null;
+  /** One-time code for this child's pending pickup — only sent to the adult who requested it. */
+  pickupCode?: string | null;
 }
 
 export interface Parent {
@@ -82,6 +104,8 @@ export interface QueueItem {
   teacherId: string;
   requestType: QueueRequestType;
   requestedAt: string; // ISO timestamp
+  /** True for a pickup that can only be accepted with the parent's one-time code (the code itself is never sent to staff). */
+  requiresCode?: boolean;
 }
 
 export interface Notice {

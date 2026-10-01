@@ -2,14 +2,15 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 const NAV_LINKS = [
-  { href: '#features', label: 'Features' },
-  { href: '#how-it-works', label: 'How it works' },
-  { href: '#roles', label: 'Who it\'s for' },
+  { href: '/#features', label: 'Features' },
+  { href: '/#how-it-works', label: 'How it works' },
+  { href: '/#roles', label: 'Who it\'s for' },
 ];
 
 /**
- * Public marketing navbar — shown on the home page (and reachable from
- * the login page) for logged-out visitors. The in-app TopBar (with the
+ * Public marketing navbar — shown on the home page and the legal pages
+ * (and reachable from the login page) for logged-out visitors. Section
+ * links are "/#..." so they also work from a legal page. The in-app TopBar (with the
  * Log Out button) takes over once someone's signed in.
  */
 export function PublicNavbar() {

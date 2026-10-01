@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Screen } from '../../components/Screen';
 import { useAuth } from '../../context/AuthContext';
-import { api, type MyAttendanceChild } from '../../services/api';
+import { api, type MyAttendanceChild, type MyClassChild } from '../../services/api';
 import { getMonthWeeks, MONTH_NAMES, WEEKDAY_LABELS } from '../../utils/month';
 
 type StoredStatus = 'PRESENT' | 'ABSENT' | 'SICK' | 'SUSPENDED' | 'HOLIDAY';
@@ -32,19 +32,26 @@ const STATUS_MEANING: Record<DisplayStatus, string> = {
 // Grid only shows the 5 school weekdays — Sat/Sun never render as columns.
 const LEGEND_ORDER: DisplayStatus[] = ['PRESENT', 'LATE', 'ABSENT', 'HOLIDAY', 'WEEKEND', 'SICK', 'SUSPENDED'];
 
+type Tab = 'class' | 'attendance';
+
 const POLL_MS = 4000;
 const now = new Date();
 const YEAR_OPTIONS = [now.getFullYear() - 1, now.getFullYear(), now.getFullYear() + 1];
 
 /**
- * Parent Tab 2 - Class & Attendance: a full month, laid out week by
- * week (weekdays only), for every linked child. Present/Absent/Sick/
- * Suspended/Holiday/Late come from attendance_records — a teacher (or
- * an approved drop-off) sets these; this screen is read-only. Mirrors
- * the mobile app's AttendanceScreen.
+ * Parent Tab 2 - Class & Attendance, split into two sub-tabs:
+ * - My Class: one card per linked child (siblings in the same class
+ *   still get a card each) — their grade, room and teacher.
+ * - Attendance: a full month, laid out week by week (weekdays only),
+ *   for every linked child. Present/Absent/Sick/Suspended/Holiday/Late
+ *   come from attendance_records — a teacher (or an approved drop-off)
+ *   sets these; this view is read-only. Mirrors the mobile app's
+ *   AttendanceScreen.
  */
 export function ClassAttendanceScreen() {
   const { token } = useAuth();
+  const [tab, setTab] = useState<Tab>('class');
+  const [classes, setClasses] = useState<MyClassChild[]>([]);
   const [children, setChildren] = useState<MyAttendanceChild[]>([]);
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1); // 1-12
@@ -59,6 +66,11 @@ export function ClassAttendanceScreen() {
     return () => { cancelled = true; clearInterval(interval); };
   }, [token]);
 
+  useEffect(() => {
+    if (!token) return;
+    api.myClasses(token).then(setClasses).catch(() => {});
+  }, [token]);
+
   const weeks = getMonthWeeks(year, month);
   const weekdayLabels = WEEKDAY_LABELS.slice(0, 5);
 
@@ -70,7 +82,46 @@ export function ClassAttendanceScreen() {
   };
 
   return (
-    <Screen title="Class & Attendance" subtitle="Select a month to see the full record, week by week.">
+    <Screen
+      title="Class & Attendance"
+      subtitle={tab === 'class' ? "Each child's grade, room and teacher." : 'Select a month to see the full record, week by week.'}
+    >
+      <div className="subtabs">
+        <button type="button" className={`subtab${tab === 'class' ? ' subtab-active' : ''}`} onClick={() => setTab('class')}>My Class</button>
+        <button type="button" className={`subtab${tab === 'attendance' ? ' subtab-active' : ''}`} onClick={() => setTab('attendance')}>Attendance</button>
+      </div>
+
+      {tab === 'class' && (
+        classes.length === 0 ? (
+          <p className="empty-text">No children linked to this account yet.</p>
+        ) : (
+          classes.map(child => (
+            <div key={child.id} className="card">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                {child.photoUrl ? (
+                  <img src={child.photoUrl} alt="" className="avatar" />
+                ) : (
+                  <span className="avatar avatar-placeholder">{child.fullName.charAt(0)}</span>
+                )}
+                <p className="quick-action-title" style={{ fontSize: 17, margin: 0 }}>{child.fullName}</p>
+              </div>
+              {/* Room falls back to the class name — not both, since a class
+                  name like "Grade 1 - Room 12" already spells out grade and room. */}
+              {[
+                ['Grade', child.gradeName ?? 'Not assigned yet'],
+                ['Room', child.roomName || child.className || 'Not assigned yet'],
+                ['Teacher', child.teacherName || 'Not assigned yet'],
+              ].map(([label, value]) => (
+                <p key={label} style={{ margin: '0 0 4px', fontSize: 14, color: 'var(--text)' }}>
+                  <strong>{label}:</strong> {value}
+                </p>
+              ))}
+            </div>
+          ))
+        )
+      )}
+
+      {tab === 'attendance' && (<>
       <div className="btn-row" style={{ alignItems: 'flex-end', gap: 8 }}>
         <div style={{ flex: 1 }}>
           <p className="field-label" style={{ margin: '0 0 4px' }}>Month</p>
@@ -131,6 +182,7 @@ export function ClassAttendanceScreen() {
           </div>
         ))
       )}
+      </>)}
 
       {infoOpen && (
         <div

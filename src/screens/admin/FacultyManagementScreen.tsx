@@ -22,7 +22,7 @@ type Tab = 'staff' | 'register';
  * classroom field only makes sense, and only shows, for the Teacher role.
  */
 export function FacultyManagementScreen() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [tab, setTab] = useState<Tab>('staff');
   const [staff, setStaff] = useState<StaffRow[]>([]);
   const [classes, setClasses] = useState<ClassRow[]>([]);
@@ -77,6 +77,13 @@ export function FacultyManagementScreen() {
     if (!token) return;
     try { await api.setStaffStatus(token, member.id, !member.active); await load(); }
     catch (error) { setMessage(error instanceof Error ? error.message : 'Could not update staff member'); }
+  };
+  // For a lost phone (and lost recovery codes): clears their two-step
+  // verification and signs them out; they set it up again at next sign-in.
+  const resetMfa = async (member: StaffRow) => {
+    if (!token || !window.confirm(`Reset two-step verification for ${member.fullName}? Only do this after confirming who is asking. They'll be signed out and set it up again at their next sign-in.`)) return;
+    try { await api.resetStaffMfa(token, member.id); setMessage(`Two-step verification reset for ${member.fullName}.`); await load(); }
+    catch (error) { setMessage(error instanceof Error ? error.message : 'Could not reset two-step verification'); }
   };
   const remove = async (member: StaffRow) => {
     if (!token || !window.confirm(`Delete ${member.fullName}? This removes their account and cannot be undone.`)) return;
@@ -144,6 +151,9 @@ export function FacultyManagementScreen() {
                   <td><span className="pill" style={{ backgroundColor: member.active ? 'var(--green)' : 'var(--red)' }}>{member.active ? 'Active' : 'Suspended'}</span></td>
                   <td className="actions-cell">
                     <button type="button" className="btn btn-secondary btn-sm" onClick={() => toggleSuspend(member)}>{member.active ? 'Suspend' : 'Reactivate'}</button>
+                    {member.mfaEnabled && member.id !== user?.id && (
+                      <button type="button" className="btn btn-secondary btn-sm" onClick={() => resetMfa(member)}>Reset 2-step</button>
+                    )}
                     <button type="button" className="btn btn-danger btn-sm" onClick={() => remove(member)}>Delete</button>
                   </td>
                 </tr>

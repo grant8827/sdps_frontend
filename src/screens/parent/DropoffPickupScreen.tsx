@@ -103,6 +103,15 @@ export function DropoffPickupScreen() {
                 Pick Up
               </button>
             </div>
+            {child.status === 'PICKUP_REQUESTED' && child.pickupCode && (
+              <div style={{ marginTop: 12, padding: 12, borderRadius: 10, background: 'var(--chip-bg)', textAlign: 'center' }}>
+                <p className="field-label" style={{ margin: 0 }}>Show this pickup code to the teacher</p>
+                <p style={{ margin: '4px 0 0', fontSize: 32, fontWeight: 800, letterSpacing: 6, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>
+                  {child.pickupCode.slice(0, 3)} {child.pickupCode.slice(3)}
+                </p>
+                <p className="field-label" style={{ margin: '4px 0 0' }}>Only works for this pickup. Don't share it with anyone who isn't picking up.</p>
+              </div>
+            )}
             {!atCampus && <p className="field-label">{child.latitude == null || child.longitude == null ? 'School location is not configured yet.' : position ? 'Move within the school pickup/drop-off radius to enable these buttons.' : 'Turn on location to enable these buttons.'}</p>}
           </div>
           );

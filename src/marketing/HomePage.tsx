@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { SiteFooter } from '../components/SiteFooter';
 import { PublicNavbar } from './PublicNavbar';
 
 const FEATURES = [
@@ -160,17 +161,7 @@ export function HomePage() {
         <Link to="/register" className="btn btn-block-inverse">Get Started</Link>
       </section>
 
-      <footer className="site-footer">
-        <div className="footer-inner">
-          <div className="topbar-brand">
-            <span className="topbar-badge">🏫</span>
-            <span>School Drop-off &amp; Pick-up</span>
-          </div>
-          <p className="footer-copy">
-            © {new Date().getFullYear()} School Drop-off &amp; Pick-up. Also available as a mobile app.
-          </p>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
