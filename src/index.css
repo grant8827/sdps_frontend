@@ -660,7 +660,7 @@ a {
   font-size: 14px;
 }
 
-/* ---- Auth pages (Login / Register a school): split brand panel + form ---- */
+/* ---- Auth pages (Login / Register a school): centered form ---- */
 
 .auth-page {
   min-height: 100vh;
@@ -668,94 +668,13 @@ a {
   background: var(--bg);
 }
 
-.auth-brand-panel {
-  display: none;
-  flex: 1 1 44%;
-  flex-direction: column;
-  justify-content: center;
-  padding: 64px 56px;
-  background: linear-gradient(155deg, var(--blue), var(--purple) 130%);
-  color: #fff;
-  position: relative;
-}
-
-.auth-brand-inner {
-  max-width: 440px;
-  position: relative;
-}
-
-.auth-logo-badge {
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.16);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 24px;
-  font-size: 28px;
-  text-decoration: none;
-}
-
-.auth-brand-title {
-  font-size: 32px;
-  font-weight: 800;
-  line-height: 1.2;
-  margin: 0 0 12px;
-}
-
-.auth-brand-tagline {
-  font-size: 15px;
-  line-height: 1.5;
-  color: rgba(255, 255, 255, 0.85);
-  max-width: 380px;
-  margin: 0;
-}
-
-.auth-feature-list {
-  display: flex;
-  flex-direction: column;
-  gap: 22px;
-  margin-top: 44px;
-}
-
-.auth-feature-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-}
-
-.auth-feature-icon {
-  width: 38px;
-  height: 38px;
-  border-radius: 11px;
-  background: rgba(255, 255, 255, 0.14);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  flex-shrink: 0;
-}
-
-.auth-feature-title {
-  font-size: 15px;
-  font-weight: 700;
-  margin: 0;
-}
-
-.auth-feature-body {
-  font-size: 13px;
-  line-height: 1.4;
-  color: rgba(255, 255, 255, 0.8);
-  margin: 3px 0 0;
-}
-
 .auth-form-side {
   flex: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 48px 24px;
+  padding: 48px 24px 24px;
 }
 
 .auth-form-inner {
@@ -763,7 +682,7 @@ a {
   max-width: 420px;
 }
 
-.auth-mobile-brand {
+.auth-brand-line {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -774,13 +693,10 @@ a {
   margin-bottom: 24px;
 }
 
-@media (min-width: 900px) {
-  .auth-brand-panel {
-    display: flex;
-  }
-  .auth-mobile-brand {
-    display: none;
-  }
+/* The footer spans the page width under the centered form. */
+.auth-form-side .site-footer {
+  width: 100%;
+  max-width: 1080px;
 }
 
 .form-card {
