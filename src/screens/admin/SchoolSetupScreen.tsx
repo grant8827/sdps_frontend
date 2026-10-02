@@ -5,7 +5,6 @@ import { EditIcon, PauseIcon, ResumeIcon, TrashIcon } from '../../components/Act
 import { api, type CampusProfile } from '../../services/api';
 import { emptyAddress, formatAddress, parseAddress, type AddressFields } from '../../utils/address';
 
-const emptyForm = { name: '', address: emptyAddress(), startTime: '', dismissalTime: '', extendedTime: '' };
 
 const DEFAULT_GEOFENCE_RADIUS = '150';
 
@@ -39,58 +38,31 @@ const formatDate = (utc?: string) => (utc ? new Date(`${utc.replace(' ', 'T')}Z`
 
 /**
  * School Setup, in two tabs:
- * - School Profile: name, mailing address, the daily start/dismissal
- *   times (a drop-off after Start Time shows "L" on the parent's
- *   attendance view) and extended (daycare) dismissal — plus a table of
- *   the school's saved locations (date added, location, school) with
- *   edit / suspend / delete actions. The primary location (the first
- *   one) can't be deleted.
- * - Add Location (or Edit Location): one location's address, pickup
- *   radius and hours, for schools with more than one site.
+ * - School Profile: the school's saved locations (date added, location,
+ *   school) with edit / suspend / delete actions. The primary location
+ *   (the first one) can't be deleted.
+ * - Add Location (or Edit Location): one location's name, address,
+ *   pickup radius, and daily start / dismissal / extended (daycare)
+ *   times — a drop-off after a location's Start Time shows "L" on the
+ *   parent's attendance view.
  */
 export function SchoolSetupScreen() {
   const { token } = useAuth();
   const [tab, setTab] = useState<Tab>('profile');
-  const [form, setForm] = useState(emptyForm);
+  const [schoolName, setSchoolName] = useState('');
   const [campuses, setCampuses] = useState<CampusProfile[]>([]);
   const [location, setLocation] = useState<LocationForm>(emptyLocation());
   const [message, setMessage] = useState('');
   const [locationMessage, setLocationMessage] = useState('');
-  const [submitting, setSubmitting] = useState(false);
   const [savingLocation, setSavingLocation] = useState(false);
 
   const load = async () => {
     if (!token) return;
     const setup = await api.adminSetup(token);
-    setForm({
-      name: setup.school.name,
-      address: parseAddress(setup.school.address),
-      startTime: setup.school.startTime || '',
-      dismissalTime: setup.school.dismissalTime || '',
-      extendedTime: setup.school.extendedTime || '',
-    });
+    setSchoolName(setup.school.name);
     setCampuses(setup.campuses);
   };
   useEffect(() => { load().catch(error => setMessage(error.message)); }, [token]);
-
-  const set = (key: 'name' | 'startTime' | 'dismissalTime' | 'extendedTime', value: string) => setForm(current => ({ ...current, [key]: value }));
-  const setSchoolAddress = (key: keyof AddressFields, value: string) =>
-    setForm(current => ({ ...current, address: { ...current.address, [key]: value } }));
-
-  const save = async () => {
-    if (!token) return;
-    setMessage('');
-    setSubmitting(true);
-    try {
-      await api.updateSchoolProfile(token, { ...form, address: formatAddress(form.address) });
-      setMessage('School profile saved.');
-      await load();
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Could not save school profile');
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   // ---- Location table actions ----
   const openLocationForm = (campus: CampusProfile | null) => {
@@ -156,7 +128,7 @@ export function SchoolSetupScreen() {
   };
 
   return (
-    <Screen title="School Setup" subtitle="Your school's profile, hours and locations.">
+    <Screen title="School Setup" subtitle="Your school's locations, their pickup areas and hours.">
       <div className="subtabs">
         <button type="button" className={`subtab${tab === 'profile' ? ' subtab-active' : ''}`} onClick={() => setTab('profile')}>School Profile</button>
         <button type="button" className={`subtab${tab === 'location' ? ' subtab-active' : ''}`} onClick={() => openLocationForm(null)}>
@@ -167,40 +139,6 @@ export function SchoolSetupScreen() {
       {tab === 'profile' && (
         <>
           {message && <div className="card">{message}</div>}
-
-          <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <p className="field-label" style={{ margin: 0 }}>School Name</p>
-            <input className="input" value={form.name} onChange={e => set('name', e.target.value)} />
-
-            <p className="field-label" style={{ margin: 0 }}>School Mailing Address</p>
-            <input className="input" autoComplete="address-line1" placeholder="Street address" value={form.address.addressLine1} onChange={e => setSchoolAddress('addressLine1', e.target.value)} />
-            <input className="input" autoComplete="address-line2" placeholder="Suite, unit, building (optional)" value={form.address.addressLine2} onChange={e => setSchoolAddress('addressLine2', e.target.value)} />
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(90px, 1fr)', gap: 10 }}>
-              <input className="input" autoComplete="address-level2" placeholder="City" value={form.address.city} onChange={e => setSchoolAddress('city', e.target.value)} />
-              <input className="input" autoComplete="address-level1" placeholder="State/Province" value={form.address.state} onChange={e => setSchoolAddress('state', e.target.value)} />
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(110px, 1fr) minmax(0, 2fr)', gap: 10 }}>
-              <input className="input" autoComplete="postal-code" placeholder="ZIP/Postal code" value={form.address.postalCode} onChange={e => setSchoolAddress('postalCode', e.target.value)} />
-              <input className="input" autoComplete="country-name" placeholder="Country" value={form.address.country} onChange={e => setSchoolAddress('country', e.target.value)} />
-            </div>
-
-            <p className="field-label" style={{ margin: 0 }}>Start Time</p>
-            <input className="input" type="time" value={form.startTime} onChange={e => set('startTime', e.target.value)} />
-
-            <p className="field-label" style={{ margin: 0 }}>Dismissal Time</p>
-            <input className="input" type="time" value={form.dismissalTime} onChange={e => set('dismissalTime', e.target.value)} />
-
-            <p className="field-label" style={{ margin: 0 }}>Extended Time (Daycare Dismissal)</p>
-            <input className="input" type="time" value={form.extendedTime} onChange={e => set('extendedTime', e.target.value)} />
-
-            <p className="field-label" style={{ margin: 0 }}>
-              A student dropped off after Start Time is marked "L" (late) on their parent's attendance record.
-            </p>
-
-            <button type="button" className="btn btn-primary" onClick={save} disabled={submitting}>
-              {submitting ? 'Saving…' : 'Save'}
-            </button>
-          </div>
 
           <p className="form-title" style={{ margin: '4px 0' }}>Locations</p>
           <div className="table-wrap">
@@ -219,7 +157,7 @@ export function SchoolSetupScreen() {
                         {campus.isPrimary && <span className="pill" style={{ marginLeft: 8, backgroundColor: 'var(--blue)' }}>Primary</span>}
                         <div className="field-label" style={{ margin: 0 }}>{campus.address || 'No address yet'}</div>
                       </td>
-                      <td>{form.name}</td>
+                      <td>{schoolName}</td>
                       <td>
                         <span className="pill" style={{ backgroundColor: suspended ? 'var(--amber)' : 'var(--green)' }}>{suspended ? 'Suspended' : 'Active'}</span>
                       </td>
