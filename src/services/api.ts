@@ -209,7 +209,16 @@ export const api = {
 };
 
 export interface AdminOverview { totalStudents: number; activeTeachers: number; presentToday: number; pendingRequests: number }
-export interface SchoolProfile {
+/** Structured address parts as stored (null when only the legacy one-line `address` exists). */
+export interface StoredAddressParts {
+  addressLine1?: string | null;
+  addressLine2?: string | null;
+  city?: string | null;
+  state?: string | null;
+  postalCode?: string | null;
+  country?: string | null;
+}
+export interface SchoolProfile extends StoredAddressParts {
   id: string;
   name: string;
   code: string;
@@ -220,7 +229,7 @@ export interface SchoolProfile {
   dismissalTime: string | null;
   extendedTime: string | null;
 }
-export interface CampusProfile {
+export interface CampusProfile extends StoredAddressParts {
   /** The school's first location — always shown, can't be removed. */
   isPrimary?: boolean;
   createdAt?: string; // UTC 'YYYY-MM-DD HH:MM:SS'

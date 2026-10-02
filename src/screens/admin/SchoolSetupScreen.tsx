@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { Screen } from '../../components/Screen';
 import { useAuth } from '../../context/AuthContext';
 import { EditIcon, PauseIcon, ResumeIcon, TrashIcon } from '../../components/ActionIcons';
-import { api, type CampusProfile } from '../../services/api';
-import { emptyAddress, formatAddress, parseAddress, type AddressFields } from '../../utils/address';
+import { api, type CampusProfile, type SchoolProfile } from '../../services/api';
+import { emptyAddress, formatAddress, storedAddress, type AddressFields } from '../../utils/address';
 
 
 const DEFAULT_GEOFENCE_RADIUS = '150';
@@ -24,15 +24,20 @@ const emptyLocation = (): LocationForm => ({
   id: null, name: '', address: emptyAddress(), geofenceRadius: DEFAULT_GEOFENCE_RADIUS, hasCoordinates: false,
   startTime: '', dismissalTime: '', extendedTime: '',
 });
-const toLocationForm = (c: CampusProfile): LocationForm => ({
+// Editing a location: its own saved values, and — for anything it never
+// had set — the school-wide value, which is what currently applies to it
+// (a location without its own hours uses the school's, and a location
+// made at registration may have no address of its own yet). Saving then
+// stores them on the location itself.
+const toLocationForm = (c: CampusProfile, school: SchoolProfile | null): LocationForm => ({
   id: c.id,
   name: c.name,
-  address: parseAddress(c.address),
+  address: storedAddress(c) ?? (school && storedAddress(school)) ?? emptyAddress(),
   geofenceRadius: c.geofenceRadius != null ? String(c.geofenceRadius) : DEFAULT_GEOFENCE_RADIUS,
   hasCoordinates: c.latitude != null && c.longitude != null,
-  startTime: c.startTime || '',
-  dismissalTime: c.dismissalTime || '',
-  extendedTime: c.extendedTime || '',
+  startTime: c.startTime || school?.startTime || '',
+  dismissalTime: c.dismissalTime || school?.dismissalTime || '',
+  extendedTime: c.extendedTime || school?.extendedTime || '',
 });
 const formatDate = (utc?: string) => (utc ? new Date(`${utc.replace(' ', 'T')}Z`).toLocaleDateString() : '—');
 
@@ -49,7 +54,7 @@ const formatDate = (utc?: string) => (utc ? new Date(`${utc.replace(' ', 'T')}Z`
 export function SchoolSetupScreen() {
   const { token } = useAuth();
   const [tab, setTab] = useState<Tab>('profile');
-  const [schoolName, setSchoolName] = useState('');
+  const [school, setSchool] = useState<SchoolProfile | null>(null);
   const [campuses, setCampuses] = useState<CampusProfile[]>([]);
   const [location, setLocation] = useState<LocationForm>(emptyLocation());
   const [message, setMessage] = useState('');
@@ -59,14 +64,14 @@ export function SchoolSetupScreen() {
   const load = async () => {
     if (!token) return;
     const setup = await api.adminSetup(token);
-    setSchoolName(setup.school.name);
+    setSchool(setup.school);
     setCampuses(setup.campuses);
   };
   useEffect(() => { load().catch(error => setMessage(error.message)); }, [token]);
 
   // ---- Location table actions ----
   const openLocationForm = (campus: CampusProfile | null) => {
-    setLocation(campus ? toLocationForm(campus) : emptyLocation());
+    setLocation(campus ? toLocationForm(campus, school) : emptyLocation());
     setLocationMessage('');
     setTab('location');
   };
@@ -157,7 +162,7 @@ export function SchoolSetupScreen() {
                         {campus.isPrimary && <span className="pill" style={{ marginLeft: 8, backgroundColor: 'var(--blue)' }}>Primary</span>}
                         <div className="field-label" style={{ margin: 0 }}>{campus.address || 'No address yet'}</div>
                       </td>
-                      <td>{schoolName}</td>
+                      <td>{school?.name}</td>
                       <td>
                         <span className="pill" style={{ backgroundColor: suspended ? 'var(--amber)' : 'var(--green)' }}>{suspended ? 'Suspended' : 'Active'}</span>
                       </td>

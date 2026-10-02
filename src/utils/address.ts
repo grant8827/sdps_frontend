@@ -17,6 +17,24 @@ export function formatAddress(value: AddressFields): string {
   return [street, region, value.country.trim()].filter(Boolean).join(', ');
 }
 
+/**
+ * An address form from what the server stored: the structured parts when
+ * they exist, else the legacy one-line address parsed best-effort, else
+ * null (nothing saved).
+ */
+export function storedAddress(parts: {
+  address?: string | null; addressLine1?: string | null; addressLine2?: string | null;
+  city?: string | null; state?: string | null; postalCode?: string | null; country?: string | null;
+}): AddressFields | null {
+  if (parts.addressLine1 || parts.city || parts.postalCode) {
+    return {
+      addressLine1: parts.addressLine1 ?? '', addressLine2: parts.addressLine2 ?? '', city: parts.city ?? '',
+      state: parts.state ?? '', postalCode: parts.postalCode ?? '', country: parts.country || emptyAddress().country,
+    };
+  }
+  return parts.address ? parseAddress(parts.address) : null;
+}
+
 // Existing records were stored as one string. Populate the structured form
 // conservatively; administrators can correct any ambiguous legacy address.
 export function parseAddress(value?: string): AddressFields {
