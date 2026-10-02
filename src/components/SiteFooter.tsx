@@ -24,12 +24,12 @@ function FooterColumn({ title, links }: { title: string; links: FooterLink[] }) 
 }
 
 /**
- * Site-wide footer in columns: brand, Product (or, when signed in, your
- * account), Legal, and Trust & Security, over a bottom bar with the
- * copyright. `compact` (inside the dashboards and on the sign-in pages)
- * drops the brand blurb and uses tighter spacing.
+ * Footer for the public pages (home, sign-in, register, legal pages) in
+ * columns: brand, Product (or, when signed in, your account), Legal, and
+ * Trust & Security, over a bottom bar with the copyright. Not shown
+ * inside the dashboards.
  */
-export function SiteFooter({ compact = false }: { compact?: boolean }) {
+export function SiteFooter() {
   const { user } = useAuth();
   const year = new Date().getFullYear();
 
@@ -44,20 +44,18 @@ export function SiteFooter({ compact = false }: { compact?: boolean }) {
     ];
 
   return (
-    <footer className={`site-footer${compact ? ' site-footer-compact' : ''}`}>
+    <footer className="site-footer">
       <div className="footer-main">
-        {!compact && (
-          <div className="footer-brand">
-            <Link to="/" className="topbar-brand">
-              <span className="topbar-badge">🏫</span>
-              <span>School Drop-off &amp; Pick-up</span>
-            </Link>
-            <p className="footer-tagline">
-              Faster, safer drop-offs and pick-ups for parents, teachers and school staff — on the web and on iPhone and Android.
-            </p>
-            <p className="footer-trust">🔒 Built for student privacy: no ads, no selling data.</p>
-          </div>
-        )}
+        <div className="footer-brand">
+          <Link to="/" className="topbar-brand">
+            <span className="topbar-badge">🏫</span>
+            <span>School Drop-off &amp; Pick-up</span>
+          </Link>
+          <p className="footer-tagline">
+            Faster, safer drop-offs and pick-ups for parents, teachers and school staff — on the web and on iPhone and Android.
+          </p>
+          <p className="footer-trust">🔒 Built for student privacy: no ads, no selling data.</p>
+        </div>
         <FooterColumn title={user ? 'Your account' : 'Product'} links={product} />
         <FooterColumn title="Legal" links={legalLinks('legal')} />
         <FooterColumn title="Trust & Security" links={legalLinks('trust')} />

@@ -250,11 +250,10 @@ export function SchoolSetupScreen() {
                     </tr>
                   );
                 })}
-                {campuses.length === 0 && <tr><td colSpan={5} className="empty-text">No locations yet — add one to set the drop-off/pick-up area.</td></tr>}
+                {campuses.length === 0 && <tr><td colSpan={5} className="empty-text">No locations yet — use the Add Location tab to set the drop-off/pick-up area.</td></tr>}
               </tbody>
             </table>
           </div>
-          <button type="button" className="btn add-location-btn" onClick={() => openLocationForm(null)}>+ Add Another Location</button>
         </>
       )}
 
