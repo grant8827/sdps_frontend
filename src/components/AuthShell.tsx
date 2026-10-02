@@ -1,25 +1,20 @@
 import type { ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { PublicNavbar } from '../marketing/PublicNavbar';
 import { SiteFooter } from './SiteFooter';
 
 /**
- * Shared shell for both auth pages (Login and Register a school): a
- * brand line linking home, the form (passed as children), centered, and
- * the site footer below.
+ * Shared shell for both auth pages (Login and Register a school): the
+ * same public header and footer as the home page, with the form
+ * (passed as children) centered between them.
  */
 export function AuthShell({ children }: { children: ReactNode }) {
   return (
-    <div className="auth-page">
+    <div className="public-page auth-page">
+      <PublicNavbar />
       <main className="auth-form-side">
-        <div className="auth-form-inner">
-          <Link to="/" className="auth-brand-line" aria-label="Back to home">
-            <span className="topbar-badge">🏫</span>
-            <span>School Drop-off &amp; Pick-up</span>
-          </Link>
-          {children}
-        </div>
-        <SiteFooter compact />
+        <div className="auth-form-inner">{children}</div>
       </main>
+      <SiteFooter />
     </div>
   );
 }

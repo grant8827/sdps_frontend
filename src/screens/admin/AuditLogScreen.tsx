@@ -55,6 +55,8 @@ const ACTION_LABELS: Record<string, string> = {
   SCHOOL_SETTINGS_UPDATED: 'Changed school settings',
   LOCATION_CREATED: 'Added location',
   LOCATION_UPDATED: 'Changed location',
+  LOCATION_STATUS_CHANGED: 'Suspended or reactivated location',
+  LOCATION_REMOVED: 'Deleted location',
   CLASS_CREATED: 'Added class',
   PROMOTION_RUN: 'Ran grade promotion',
   SCHOOL_YEAR_ACTIVATED: 'Activated school year',

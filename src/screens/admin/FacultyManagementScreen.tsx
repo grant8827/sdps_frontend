@@ -52,9 +52,10 @@ export function FacultyManagementScreen() {
     if (!token) return;
     setMessage('');
     if (!form.fullName.trim() || !form.email.trim() || !form.password) { setMessage('Full name, email, and password are required.'); return; }
+    if (form.password.length < 8) { setMessage('The password must be at least 8 characters.'); return; }
     setSubmitting(true);
     try {
-      await api.addStaff(token, {
+      const { restored } = await api.addStaff(token, {
         fullName: form.fullName,
         email: form.email,
         password: form.password,
@@ -62,7 +63,10 @@ export function FacultyManagementScreen() {
         role: form.role,
         classId: form.role === 'teacher' ? form.classId || undefined : undefined,
       });
-      setMessage(`${ROLE_LABELS[form.role === 'admin' ? 'school_admin' : form.role === 'front_desk' ? 'staff' : 'teacher']} added.`);
+      const roleLabel = ROLE_LABELS[form.role === 'admin' ? 'school_admin' : form.role === 'front_desk' ? 'staff' : 'teacher'];
+      setMessage(restored
+        ? `${form.fullName.trim()} was on your staff before and has been added back as ${roleLabel}, with the password you entered.`
+        : `${roleLabel} added.`);
       setForm(emptyForm);
       setTab('staff');
       await load();
@@ -120,7 +124,7 @@ export function FacultyManagementScreen() {
 
           <input className="input" placeholder="Full Name" value={form.fullName} onChange={e => set('fullName', e.target.value)} />
           <input className="input" placeholder="Email" type="email" value={form.email} onChange={e => set('email', e.target.value)} />
-          <input className="input" placeholder="Password" type="password" value={form.password} onChange={e => set('password', e.target.value)} />
+          <input className="input" placeholder="Password (at least 8 characters)" type="password" value={form.password} onChange={e => set('password', e.target.value)} />
 
           {form.role === 'teacher' && (
             <select className="input" value={form.classId} onChange={e => set('classId', e.target.value)}>

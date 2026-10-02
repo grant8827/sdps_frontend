@@ -127,6 +127,12 @@ export const api = {
     request<void>('/admin/school', { method: 'PATCH', body: JSON.stringify(input) }, token),
   addCampus: (token: string, input: { name: string; address: string; geofenceRadius?: number; startTime?: string; dismissalTime?: string; extendedTime?: string }) =>
     request<{ id: string; latitude: number; longitude: number }>('/admin/campuses', { method: 'POST', body: JSON.stringify(input) }, token),
+  /** Suspends (drop-off/pick-up paused there) or reactivates a location. */
+  setCampusActive: (token: string, campusId: string, active: boolean) =>
+    request<void>(`/admin/campuses/${campusId}/status`, { method: 'POST', body: JSON.stringify({ active }) }, token),
+  /** Removes an added (non-primary) location; its students and classes move to the primary location. */
+  removeCampus: (token: string, campusId: string) =>
+    request<{ moved: { students: number; classes: number } }>(`/admin/campuses/${campusId}`, { method: 'DELETE' }, token),
   updateCampus: (token: string, campusId: string, input: { name?: string; address?: string; geofenceRadius?: number; startTime?: string; dismissalTime?: string; extendedTime?: string }) =>
     request<void>(`/admin/campuses/${campusId}`, { method: 'PATCH', body: JSON.stringify(input) }, token),
   students: (token: string) => request<Student[]>('/admin/students', {}, token),
@@ -168,7 +174,7 @@ export const api = {
     request<void>(`/admin/teachers/${teacherId}`, { method: 'PATCH', body: JSON.stringify(input) }, token),
   staff: (token: string) => request<StaffRow[]>('/admin/staff', {}, token),
   addStaff: (token: string, input: { fullName: string; email: string; password: string; photoDataUrl?: string; classId?: string; role: StaffRole }) =>
-    request<{ id: string }>('/admin/staff', { method: 'POST', body: JSON.stringify(input) }, token),
+    request<{ id: string; restored: boolean }>('/admin/staff', { method: 'POST', body: JSON.stringify(input) }, token),
   setStaffStatus: (token: string, staffId: string, active: boolean) =>
     request<void>(`/admin/staff/${staffId}`, { method: 'PATCH', body: JSON.stringify({ active }) }, token),
   deleteStaff: (token: string, staffId: string) => request<void>(`/admin/staff/${staffId}`, { method: 'DELETE' }, token),
@@ -215,6 +221,11 @@ export interface SchoolProfile {
   extendedTime: string | null;
 }
 export interface CampusProfile {
+  /** The school's first location — always shown, can't be removed. */
+  isPrimary?: boolean;
+  createdAt?: string; // UTC 'YYYY-MM-DD HH:MM:SS'
+  /** SUSPENDED = drop-off/pick-up paused at this location. */
+  status?: 'ACTIVE' | 'SUSPENDED';
   id: string;
   name: string;
   address?: string;

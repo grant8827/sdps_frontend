@@ -1,15 +1,18 @@
 import { useEffect, useState } from 'react';
 import { Screen } from '../../components/Screen';
 import { useAuth } from '../../context/AuthContext';
-import { api } from '../../services/api';
+import { EditIcon, PauseIcon, ResumeIcon, TrashIcon } from '../../components/ActionIcons';
+import { api, type CampusProfile } from '../../services/api';
 import { emptyAddress, formatAddress, parseAddress, type AddressFields } from '../../utils/address';
 
 const emptyForm = { name: '', address: emptyAddress(), startTime: '', dismissalTime: '', extendedTime: '' };
 
 const DEFAULT_GEOFENCE_RADIUS = '150';
 
+type Tab = 'profile' | 'location';
+
 interface LocationForm {
-  id: string | null; // null = not saved yet (added via "+ Add Another Location")
+  id: string | null; // null = a new location, not saved yet
   name: string;
   address: AddressFields;
   geofenceRadius: string;
@@ -22,24 +25,39 @@ const emptyLocation = (): LocationForm => ({
   id: null, name: '', address: emptyAddress(), geofenceRadius: DEFAULT_GEOFENCE_RADIUS, hasCoordinates: false,
   startTime: '', dismissalTime: '', extendedTime: '',
 });
+const toLocationForm = (c: CampusProfile): LocationForm => ({
+  id: c.id,
+  name: c.name,
+  address: parseAddress(c.address),
+  geofenceRadius: c.geofenceRadius != null ? String(c.geofenceRadius) : DEFAULT_GEOFENCE_RADIUS,
+  hasCoordinates: c.latitude != null && c.longitude != null,
+  startTime: c.startTime || '',
+  dismissalTime: c.dismissalTime || '',
+  extendedTime: c.extendedTime || '',
+});
+const formatDate = (utc?: string) => (utc ? new Date(`${utc.replace(' ', 'T')}Z`).toLocaleDateString() : '—');
 
 /**
- * School profile: name, the daily start/dismissal times used to flag a
- * late drop-off ("L" on the parent's attendance view — see
- * AttendanceScreen), and an extended-time (daycare/aftercare) dismissal
- * time for students marked daycare on the Students tab. Below that,
- * per-location hours — some schools run more than one site on a
- * different bell schedule, so each location repeats the same fields
- * and saves independently.
+ * School Setup, in two tabs:
+ * - School Profile: name, mailing address, the daily start/dismissal
+ *   times (a drop-off after Start Time shows "L" on the parent's
+ *   attendance view) and extended (daycare) dismissal — plus a table of
+ *   the school's saved locations (date added, location, school) with
+ *   edit / suspend / delete actions. The primary location (the first
+ *   one) can't be deleted.
+ * - Add Location (or Edit Location): one location's address, pickup
+ *   radius and hours, for schools with more than one site.
  */
 export function SchoolSetupScreen() {
   const { token } = useAuth();
+  const [tab, setTab] = useState<Tab>('profile');
   const [form, setForm] = useState(emptyForm);
-  const [locations, setLocations] = useState<LocationForm[]>([]);
+  const [campuses, setCampuses] = useState<CampusProfile[]>([]);
+  const [location, setLocation] = useState<LocationForm>(emptyLocation());
   const [message, setMessage] = useState('');
+  const [locationMessage, setLocationMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [savingIndex, setSavingIndex] = useState<number | null>(null);
-  const [locationMessages, setLocationMessages] = useState<Record<number, string>>({});
+  const [savingLocation, setSavingLocation] = useState(false);
 
   const load = async () => {
     if (!token) return;
@@ -51,16 +69,7 @@ export function SchoolSetupScreen() {
       dismissalTime: setup.school.dismissalTime || '',
       extendedTime: setup.school.extendedTime || '',
     });
-    setLocations(setup.campuses.map(c => ({
-      id: c.id,
-      name: c.name,
-      address: parseAddress(c.address),
-      geofenceRadius: c.geofenceRadius != null ? String(c.geofenceRadius) : DEFAULT_GEOFENCE_RADIUS,
-      hasCoordinates: c.latitude != null && c.longitude != null,
-      startTime: c.startTime || '',
-      dismissalTime: c.dismissalTime || '',
-      extendedTime: c.extendedTime || '',
-    })));
+    setCampuses(setup.campuses);
   };
   useEffect(() => { load().catch(error => setMessage(error.message)); }, [token]);
 
@@ -75,6 +84,7 @@ export function SchoolSetupScreen() {
     try {
       await api.updateSchoolProfile(token, { ...form, address: formatAddress(form.address) });
       setMessage('School profile saved.');
+      await load();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Could not save school profile');
     } finally {
@@ -82,140 +92,217 @@ export function SchoolSetupScreen() {
     }
   };
 
-  const updateLocation = (index: number, patch: Partial<LocationForm>) =>
-    setLocations(prev => prev.map((loc, i) => (i === index ? { ...loc, ...patch } : loc)));
+  // ---- Location table actions ----
+  const openLocationForm = (campus: CampusProfile | null) => {
+    setLocation(campus ? toLocationForm(campus) : emptyLocation());
+    setLocationMessage('');
+    setTab('location');
+  };
 
-  const updateLocationAddress = (index: number, key: keyof AddressFields, value: string) =>
-    setLocations(prev => prev.map((loc, i) => i === index
-      ? { ...loc, address: { ...loc.address, [key]: value }, hasCoordinates: false }
-      : loc));
-
-  const addAnotherLocation = () => setLocations(prev => [...prev, emptyLocation()]);
-
-  const removeUnsavedLocation = (index: number) => setLocations(prev => prev.filter((_, i) => i !== index));
-
-  const saveLocation = async (index: number) => {
+  const toggleSuspend = async (campus: CampusProfile) => {
     if (!token) return;
-    const loc = locations[index];
-    const showLocationMessage = (value: string) => setLocationMessages(current => ({ ...current, [index]: value }));
-    if (!loc.name.trim()) { showLocationMessage('Location name is required.'); return; }
-    if (!loc.address.addressLine1.trim() || !loc.address.city.trim() || !loc.address.state.trim() || !loc.address.postalCode.trim()) {
-      showLocationMessage('Street address, city, state, and ZIP/postal code are required for the location geofence.'); return;
-    }
-    const radius = Number(loc.geofenceRadius);
-    if (!Number.isFinite(radius) || radius <= 0) { showLocationMessage('Geofence radius must be a positive number of meters.'); return; }
-    showLocationMessage('Verifying address…');
-    setSavingIndex(index);
+    const suspending = campus.status !== 'SUSPENDED';
+    if (suspending && !window.confirm(`Suspend ${campus.name}? Parents won't be able to request drop-off or pick-up there until you reactivate it.`)) return;
     try {
-      const input = { name: loc.name, address: formatAddress(loc.address), geofenceRadius: radius, startTime: loc.startTime, dismissalTime: loc.dismissalTime, extendedTime: loc.extendedTime };
-      if (loc.id) {
-        await api.updateCampus(token, loc.id, input);
-      } else {
-        const result = await api.addCampus(token, input);
-        updateLocation(index, { id: result.id });
-      }
-      // A successful save always means the address just geocoded fine
-      // (the backend rejects the request otherwise) — mark it here rather
-      // than reloading the whole screen just to confirm that.
+      await api.setCampusActive(token, campus.id, !suspending);
+      setMessage(`${campus.name} ${suspending ? 'suspended — drop-off and pick-up are paused there' : 'reactivated'}.`);
       await load();
-      showLocationMessage(`${loc.name} saved and mapped successfully.`);
     } catch (error) {
-      showLocationMessage(error instanceof Error ? error.message : 'Could not save location');
+      setMessage(error instanceof Error ? error.message : 'Could not update location');
+    }
+  };
+
+  const remove = async (campus: CampusProfile) => {
+    if (!token || !window.confirm(`Delete ${campus.name}? Its students and classes will move to the primary location.`)) return;
+    try {
+      const { moved } = await api.removeCampus(token, campus.id);
+      setMessage(`${campus.name} deleted.${moved.students || moved.classes ? ` ${moved.students} student(s) and ${moved.classes} class(es) moved to the primary location.` : ''}`);
+      await load();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Could not delete location');
+    }
+  };
+
+  // ---- Location form ----
+  const updateLocation = (patch: Partial<LocationForm>) => setLocation(current => ({ ...current, ...patch }));
+  const updateLocationAddress = (key: keyof AddressFields, value: string) =>
+    setLocation(current => ({ ...current, address: { ...current.address, [key]: value }, hasCoordinates: false }));
+
+  const saveLocation = async () => {
+    if (!token) return;
+    if (!location.name.trim()) { setLocationMessage('Location name is required.'); return; }
+    if (!location.address.addressLine1.trim() || !location.address.city.trim() || !location.address.state.trim() || !location.address.postalCode.trim()) {
+      setLocationMessage('Street address, city, state, and ZIP/postal code are required for the location geofence.'); return;
+    }
+    const radius = Number(location.geofenceRadius);
+    if (!Number.isFinite(radius) || radius <= 0) { setLocationMessage('Geofence radius must be a positive number of meters.'); return; }
+    setLocationMessage('Verifying address…');
+    setSavingLocation(true);
+    try {
+      const input = { name: location.name, address: formatAddress(location.address), geofenceRadius: radius, startTime: location.startTime, dismissalTime: location.dismissalTime, extendedTime: location.extendedTime };
+      if (location.id) await api.updateCampus(token, location.id, input);
+      else await api.addCampus(token, input);
+      // The backend only accepts an address it could map, so a successful
+      // save means the pickup area is set.
+      await load();
+      setMessage(`${location.name} saved and mapped successfully.`);
+      setLocation(emptyLocation());
+      setTab('profile');
+    } catch (error) {
+      setLocationMessage(error instanceof Error ? error.message : 'Could not save location');
     } finally {
-      setSavingIndex(null);
+      setSavingLocation(false);
     }
   };
 
   return (
-    <Screen title="School Setup" subtitle="School name, daily hours, and extended-day (daycare) hours.">
-      <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <p className="field-label" style={{ margin: 0 }}>School Name</p>
-        <input className="input" value={form.name} onChange={e => set('name', e.target.value)} />
-
-        <p className="field-label" style={{ margin: 0 }}>School Mailing Address</p>
-        <input className="input" autoComplete="address-line1" placeholder="Street address" value={form.address.addressLine1} onChange={e => setSchoolAddress('addressLine1', e.target.value)} />
-        <input className="input" autoComplete="address-line2" placeholder="Suite, unit, building (optional)" value={form.address.addressLine2} onChange={e => setSchoolAddress('addressLine2', e.target.value)} />
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(90px, 1fr)', gap: 10 }}>
-          <input className="input" autoComplete="address-level2" placeholder="City" value={form.address.city} onChange={e => setSchoolAddress('city', e.target.value)} />
-          <input className="input" autoComplete="address-level1" placeholder="State/Province" value={form.address.state} onChange={e => setSchoolAddress('state', e.target.value)} />
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(110px, 1fr) minmax(0, 2fr)', gap: 10 }}>
-          <input className="input" autoComplete="postal-code" placeholder="ZIP/Postal code" value={form.address.postalCode} onChange={e => setSchoolAddress('postalCode', e.target.value)} />
-          <input className="input" autoComplete="country-name" placeholder="Country" value={form.address.country} onChange={e => setSchoolAddress('country', e.target.value)} />
-        </div>
-
-        <p className="field-label" style={{ margin: 0 }}>Start Time</p>
-        <input className="input" type="time" value={form.startTime} onChange={e => set('startTime', e.target.value)} />
-
-        <p className="field-label" style={{ margin: 0 }}>Dismissal Time</p>
-        <input className="input" type="time" value={form.dismissalTime} onChange={e => set('dismissalTime', e.target.value)} />
-
-        <p className="field-label" style={{ margin: 0 }}>Extended Time (Daycare Dismissal)</p>
-        <input className="input" type="time" value={form.extendedTime} onChange={e => set('extendedTime', e.target.value)} />
-
-        <p className="field-label" style={{ margin: 0 }}>
-          A student dropped off after Start Time is marked "L" (late) on their parent's attendance record.
-        </p>
-
-        <button type="button" className="btn btn-primary" onClick={save} disabled={submitting}>
-          {submitting ? 'Saving…' : 'Save'}
+    <Screen title="School Setup" subtitle="Your school's profile, hours and locations.">
+      <div className="subtabs">
+        <button type="button" className={`subtab${tab === 'profile' ? ' subtab-active' : ''}`} onClick={() => setTab('profile')}>School Profile</button>
+        <button type="button" className={`subtab${tab === 'location' ? ' subtab-active' : ''}`} onClick={() => openLocationForm(null)}>
+          {tab === 'location' && location.id ? 'Edit Location' : 'Add Location'}
         </button>
       </div>
 
-      {message && <div className="card">{message}</div>}
+      {tab === 'profile' && (
+        <>
+          {message && <div className="card">{message}</div>}
 
-      <p className="form-title" style={{ margin: '4px 0' }}>Locations</p>
-      <p className="field-label" style={{ margin: '0 0 4px' }}>
-        For schools with more than one site — each location can have its own hours, separate from the school-wide ones above.
-      </p>
+          <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <p className="field-label" style={{ margin: 0 }}>School Name</p>
+            <input className="input" value={form.name} onChange={e => set('name', e.target.value)} />
 
-      {locations.map((loc, index) => (
-        <div key={loc.id ?? `new-${index}`} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <div className="card-header">
-            <p className="form-title" style={{ margin: 0 }}>{loc.id ? loc.name || 'Location' : 'New Location'}</p>
-            {!loc.id && <button type="button" className="link-danger" onClick={() => removeUnsavedLocation(index)}>Remove</button>}
+            <p className="field-label" style={{ margin: 0 }}>School Mailing Address</p>
+            <input className="input" autoComplete="address-line1" placeholder="Street address" value={form.address.addressLine1} onChange={e => setSchoolAddress('addressLine1', e.target.value)} />
+            <input className="input" autoComplete="address-line2" placeholder="Suite, unit, building (optional)" value={form.address.addressLine2} onChange={e => setSchoolAddress('addressLine2', e.target.value)} />
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(90px, 1fr)', gap: 10 }}>
+              <input className="input" autoComplete="address-level2" placeholder="City" value={form.address.city} onChange={e => setSchoolAddress('city', e.target.value)} />
+              <input className="input" autoComplete="address-level1" placeholder="State/Province" value={form.address.state} onChange={e => setSchoolAddress('state', e.target.value)} />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(110px, 1fr) minmax(0, 2fr)', gap: 10 }}>
+              <input className="input" autoComplete="postal-code" placeholder="ZIP/Postal code" value={form.address.postalCode} onChange={e => setSchoolAddress('postalCode', e.target.value)} />
+              <input className="input" autoComplete="country-name" placeholder="Country" value={form.address.country} onChange={e => setSchoolAddress('country', e.target.value)} />
+            </div>
+
+            <p className="field-label" style={{ margin: 0 }}>Start Time</p>
+            <input className="input" type="time" value={form.startTime} onChange={e => set('startTime', e.target.value)} />
+
+            <p className="field-label" style={{ margin: 0 }}>Dismissal Time</p>
+            <input className="input" type="time" value={form.dismissalTime} onChange={e => set('dismissalTime', e.target.value)} />
+
+            <p className="field-label" style={{ margin: 0 }}>Extended Time (Daycare Dismissal)</p>
+            <input className="input" type="time" value={form.extendedTime} onChange={e => set('extendedTime', e.target.value)} />
+
+            <p className="field-label" style={{ margin: 0 }}>
+              A student dropped off after Start Time is marked "L" (late) on their parent's attendance record.
+            </p>
+
+            <button type="button" className="btn btn-primary" onClick={save} disabled={submitting}>
+              {submitting ? 'Saving…' : 'Save'}
+            </button>
           </div>
+
+          <p className="form-title" style={{ margin: '4px 0' }}>Locations</p>
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead>
+                <tr><th>Date added</th><th>Location</th><th>School</th><th>Status</th><th style={{ textAlign: 'right' }}>Actions</th></tr>
+              </thead>
+              <tbody>
+                {campuses.map(campus => {
+                  const suspended = campus.status === 'SUSPENDED';
+                  return (
+                    <tr key={campus.id}>
+                      <td style={{ whiteSpace: 'nowrap' }}>{formatDate(campus.createdAt)}</td>
+                      <td>
+                        <strong>{campus.name}</strong>
+                        {campus.isPrimary && <span className="pill" style={{ marginLeft: 8, backgroundColor: 'var(--blue)' }}>Primary</span>}
+                        <div className="field-label" style={{ margin: 0 }}>{campus.address || 'No address yet'}</div>
+                      </td>
+                      <td>{form.name}</td>
+                      <td>
+                        <span className="pill" style={{ backgroundColor: suspended ? 'var(--amber)' : 'var(--green)' }}>{suspended ? 'Suspended' : 'Active'}</span>
+                      </td>
+                      <td>
+                        <div className="icon-actions">
+                          <button type="button" className="icon-btn" title="Edit" aria-label={`Edit ${campus.name}`} onClick={() => openLocationForm(campus)}><EditIcon /></button>
+                          <button
+                            type="button"
+                            className="icon-btn"
+                            title={suspended ? 'Reactivate' : 'Suspend'}
+                            aria-label={`${suspended ? 'Reactivate' : 'Suspend'} ${campus.name}`}
+                            onClick={() => toggleSuspend(campus)}
+                          >
+                            {suspended ? <ResumeIcon /> : <PauseIcon />}
+                          </button>
+                          <button
+                            type="button"
+                            className="icon-btn danger"
+                            title={campus.isPrimary ? "The primary location can't be deleted" : 'Delete'}
+                            aria-label={`Delete ${campus.name}`}
+                            disabled={campus.isPrimary}
+                            onClick={() => remove(campus)}
+                          >
+                            <TrashIcon />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {campuses.length === 0 && <tr><td colSpan={5} className="empty-text">No locations yet — add one to set the drop-off/pick-up area.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+          <button type="button" className="btn add-location-btn" onClick={() => openLocationForm(null)}>+ Add Another Location</button>
+        </>
+      )}
+
+      {tab === 'location' && (
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <p className="form-title" style={{ margin: 0 }}>{location.id ? `Edit ${location.name || 'location'}` : 'New Location'}</p>
 
           <p className="field-label" style={{ margin: 0 }}>Location Name</p>
-          <input className="input" value={loc.name} onChange={e => updateLocation(index, { name: e.target.value })} />
+          <input className="input" value={location.name} onChange={e => updateLocation({ name: e.target.value })} />
 
           <p className="field-label" style={{ margin: 0 }}>School Location Address</p>
-          <input className="input" autoComplete="address-line1" placeholder="Street address" value={loc.address.addressLine1} onChange={e => updateLocationAddress(index, 'addressLine1', e.target.value)} />
-          <input className="input" autoComplete="address-line2" placeholder="Suite, unit, building (optional)" value={loc.address.addressLine2} onChange={e => updateLocationAddress(index, 'addressLine2', e.target.value)} />
+          <input className="input" autoComplete="address-line1" placeholder="Street address" value={location.address.addressLine1} onChange={e => updateLocationAddress('addressLine1', e.target.value)} />
+          <input className="input" autoComplete="address-line2" placeholder="Suite, unit, building (optional)" value={location.address.addressLine2} onChange={e => updateLocationAddress('addressLine2', e.target.value)} />
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(90px, 1fr)', gap: 10 }}>
-            <input className="input" autoComplete="address-level2" placeholder="City" value={loc.address.city} onChange={e => updateLocationAddress(index, 'city', e.target.value)} />
-            <input className="input" autoComplete="address-level1" placeholder="State/Province" value={loc.address.state} onChange={e => updateLocationAddress(index, 'state', e.target.value)} />
+            <input className="input" autoComplete="address-level2" placeholder="City" value={location.address.city} onChange={e => updateLocationAddress('city', e.target.value)} />
+            <input className="input" autoComplete="address-level1" placeholder="State/Province" value={location.address.state} onChange={e => updateLocationAddress('state', e.target.value)} />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(110px, 1fr) minmax(0, 2fr)', gap: 10 }}>
-            <input className="input" autoComplete="postal-code" placeholder="ZIP/Postal code" value={loc.address.postalCode} onChange={e => updateLocationAddress(index, 'postalCode', e.target.value)} />
-            <input className="input" autoComplete="country-name" placeholder="Country" value={loc.address.country} onChange={e => updateLocationAddress(index, 'country', e.target.value)} />
+            <input className="input" autoComplete="postal-code" placeholder="ZIP/Postal code" value={location.address.postalCode} onChange={e => updateLocationAddress('postalCode', e.target.value)} />
+            <input className="input" autoComplete="country-name" placeholder="Country" value={location.address.country} onChange={e => updateLocationAddress('country', e.target.value)} />
           </div>
 
           <p className="field-label" style={{ margin: 0 }}>Pickup/Drop-off Radius (meters)</p>
-          <input className="input" type="number" min={1} value={loc.geofenceRadius} onChange={e => updateLocation(index, { geofenceRadius: e.target.value })} />
+          <input className="input" type="number" min={1} value={location.geofenceRadius} onChange={e => updateLocation({ geofenceRadius: e.target.value })} />
           <p className="field-label" style={{ margin: 0 }}>
-            {loc.hasCoordinates
+            {location.hasCoordinates
               ? '📍 Located — drop-off/pick-up will require being within this radius of the address above.'
               : 'A parent must be within this radius of the address above for drop-off/pick-up to activate.'}
           </p>
 
           <p className="field-label" style={{ margin: 0 }}>Start Time</p>
-          <input className="input" type="time" value={loc.startTime} onChange={e => updateLocation(index, { startTime: e.target.value })} />
+          <input className="input" type="time" value={location.startTime} onChange={e => updateLocation({ startTime: e.target.value })} />
 
           <p className="field-label" style={{ margin: 0 }}>Dismissal Time</p>
-          <input className="input" type="time" value={loc.dismissalTime} onChange={e => updateLocation(index, { dismissalTime: e.target.value })} />
+          <input className="input" type="time" value={location.dismissalTime} onChange={e => updateLocation({ dismissalTime: e.target.value })} />
 
           <p className="field-label" style={{ margin: 0 }}>Extended Time (Daycare Dismissal)</p>
-          <input className="input" type="time" value={loc.extendedTime} onChange={e => updateLocation(index, { extendedTime: e.target.value })} />
+          <input className="input" type="time" value={location.extendedTime} onChange={e => updateLocation({ extendedTime: e.target.value })} />
 
-          <button type="button" className="btn btn-primary" onClick={() => saveLocation(index)} disabled={savingIndex === index}>
-            {savingIndex === index ? 'Saving…' : 'Save Location'}
-          </button>
-          {locationMessages[index] && <p className="field-label" style={{ margin: 0 }}>{locationMessages[index]}</p>}
+          <div className="btn-row">
+            <button type="button" className="btn btn-primary" onClick={saveLocation} disabled={savingLocation}>
+              {savingLocation ? 'Saving…' : location.id ? 'Save Changes' : 'Save Location'}
+            </button>
+            <button type="button" className="btn btn-secondary" onClick={() => setTab('profile')}>Cancel</button>
+          </div>
+          {locationMessage && <p className="field-label" style={{ margin: 0 }}>{locationMessage}</p>}
         </div>
-      ))}
-
-      <button type="button" className="btn btn-secondary" onClick={addAnotherLocation}>+ Add Another Location</button>
+      )}
     </Screen>
   );
 }

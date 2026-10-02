@@ -401,6 +401,58 @@ a {
   color: #374151;
 }
 
+/* Icon-only row actions (edit / suspend / delete). */
+.icon-actions {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.icon-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.icon-btn:hover,
+.icon-btn:focus-visible {
+  background: var(--chip-bg);
+  color: var(--blue);
+}
+
+.icon-btn.danger:hover,
+.icon-btn.danger:focus-visible {
+  color: var(--red);
+}
+
+.icon-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  background: transparent;
+  color: var(--text-muted);
+}
+
+/* School Setup's "+ Add Another Location": same colors as the sidebar
+   links — muted text that turns blue on hover — instead of the dark grey
+   secondary text, which was hard to read in dark mode. */
+.add-location-btn {
+  background: var(--chip-bg);
+  color: var(--text-muted);
+  border: 1px dashed var(--border-strong);
+}
+
+.add-location-btn:hover,
+.add-location-btn:focus-visible {
+  color: var(--blue);
+}
+
 .btn:disabled {
   background: var(--border-strong);
   color: #fff;
@@ -660,43 +712,26 @@ a {
   font-size: 14px;
 }
 
-/* ---- Auth pages (Login / Register a school): centered form ---- */
+/* ---- Auth pages (Login / Register a school): public header, centered form, footer ---- */
 
 .auth-page {
   min-height: 100vh;
   display: flex;
+  flex-direction: column;
   background: var(--bg);
 }
 
 .auth-form-side {
   flex: 1;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 48px 24px 24px;
+  padding: 48px 24px;
 }
 
 .auth-form-inner {
   width: 100%;
   max-width: 420px;
-}
-
-.auth-brand-line {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 700;
-  font-size: 15px;
-  color: var(--text);
-  text-decoration: none;
-  margin-bottom: 24px;
-}
-
-/* The footer spans the page width under the centered form. */
-.auth-form-side .site-footer {
-  width: 100%;
-  max-width: 1080px;
 }
 
 .form-card {
