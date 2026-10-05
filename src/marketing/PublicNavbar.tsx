@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { BrandLogo } from '../components/BrandLogo';
 
 const NAV_LINKS = [
   { href: '/#features', label: 'Features' },
   { href: '/#how-it-works', label: 'How it works' },
+  { href: '/#safety', label: 'Safety' },
   { href: '/#roles', label: 'Who it\'s for' },
 ];
 
@@ -20,8 +22,7 @@ export function PublicNavbar() {
     <header className="public-nav">
       <div className="public-nav-inner">
         <Link to="/" className="topbar-brand" onClick={() => setMenuOpen(false)}>
-          <span className="topbar-badge">🏫</span>
-          <span>School Drop-off &amp; Pick-up</span>
+          <BrandLogo height={52} />
         </Link>
 
         <nav className="nav-links">

@@ -46,8 +46,8 @@ export function OverviewScreen() {
       <div className="tile-grid">
         <SummaryTile label="Total Enrolled Students" value={overview?.totalStudents ?? 0} />
         <SummaryTile label="Active Teachers" value={overview?.activeTeachers ?? 0} />
-        <SummaryTile label="Present Today" value={overview?.presentToday ?? 0} accentColor="#16A34A" />
-        <SummaryTile label="Pending Requests" value={overview?.pendingRequests ?? 0} accentColor="#F59E0B" />
+        <SummaryTile label="Present Today" value={overview?.presentToday ?? 0} accentColor="#39A844" />
+        <SummaryTile label="Pending Requests" value={overview?.pendingRequests ?? 0} accentColor="var(--amber-text)" />
       </div>
 
       {notices.length > 0 && (

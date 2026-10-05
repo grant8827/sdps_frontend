@@ -20,10 +20,10 @@ const STATUS_LABEL: Record<DisplayStatus, string> = {
   PRESENT: '✓', ABSENT: 'X', HOLIDAY: 'H', WEEKEND: 'WK', SICK: 'S', SUSPENDED: 'SP', UNMARKED: '—', LATE: 'L',
 };
 const STATUS_COLOR: Record<DisplayStatus, string> = {
-  PRESENT: '#16A34A', ABSENT: '#DC2626', HOLIDAY: '#7C3AED', WEEKEND: '#E5E7EB', SICK: '#F59E0B', SUSPENDED: '#111827', UNMARKED: '#F3F4F6', LATE: '#F97316',
+  PRESENT: '#39A844', ABSENT: '#DC2626', HOLIDAY: '#123B6D', WEEKEND: '#E5E7EB', SICK: '#F5B82E', SUSPENDED: '#111827', UNMARKED: '#F3F4F6', LATE: '#F97316',
 };
 const STATUS_TEXT_COLOR: Record<DisplayStatus, string> = {
-  PRESENT: '#fff', ABSENT: '#fff', HOLIDAY: '#fff', SICK: '#fff', SUSPENDED: '#fff', WEEKEND: '#6B7280', UNMARKED: '#9CA3AF', LATE: '#fff',
+  PRESENT: '#fff', ABSENT: '#fff', HOLIDAY: '#fff', SICK: '#123B6D', SUSPENDED: '#fff', WEEKEND: '#6B7280', UNMARKED: '#9CA3AF', LATE: '#fff',
 };
 const STATUS_MEANING: Record<DisplayStatus, string> = {
   PRESENT: 'Present — checked in for the day',

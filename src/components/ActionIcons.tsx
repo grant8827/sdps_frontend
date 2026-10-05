@@ -18,3 +18,6 @@ export const ResumeIcon = () => (
 export const TrashIcon = () => (
   <svg {...svgProps}><path d="M3 6h18" /><path d="M8 6V4h8v2" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6M14 11v6" /></svg>
 );
+export const MailIcon = () => (
+  <svg {...svgProps}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></svg>
+);

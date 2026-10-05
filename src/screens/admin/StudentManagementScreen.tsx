@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Screen } from '../../components/Screen';
+import { InviteResult } from '../../components/InviteResult';
 import { useAuth } from '../../context/AuthContext';
 import { AttendanceList } from '../../components/AttendanceList';
 import { SummaryTile } from '../../components/SummaryTile';
-import { api, type AdminSetup, type AttendanceRow, type AttendanceSummary, type SettableAttendanceStatus, type Student } from '../../services/api';
+import { api, type AdminSetup, type AttendanceRow, type AttendanceSummary, type InviteResult as InviteResultData, type SettableAttendanceStatus, type Student } from '../../services/api';
 
 interface DraftChild {
   firstName: string;
@@ -16,7 +17,7 @@ interface DraftChild {
   daycare: boolean;
 }
 const emptyChild = (gradeLevelId = ''): DraftChild => ({ firstName: '', lastName: '', studentNumber: '', dateOfBirth: '', gradeLevelId, classId: '', photoDataUrl: '', daycare: false });
-const emptyGuardianForm = { schoolYearId: '', guardianId: '', guardianName: '', guardianEmail: '', guardianPhone: '', relationship: 'Parent', temporaryPassword: '' };
+const emptyGuardianForm = { schoolYearId: '', guardianId: '', guardianName: '', guardianEmail: '', guardianPhone: '', relationship: 'Parent' };
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
 type Tab = 'list' | 'attendance' | 'register';
@@ -29,6 +30,7 @@ export function StudentManagementScreen() {
   const [children, setChildren] = useState<DraftChild[]>([emptyChild()]);
   const [guardianForm, setGuardianForm] = useState(emptyGuardianForm);
   const [message, setMessage] = useState('');
+  const [invite, setInvite] = useState<{ name: string; result: InviteResultData } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [gradeFilter, setGradeFilter] = useState('');
   const [search, setSearch] = useState('');
@@ -100,6 +102,7 @@ export function StudentManagementScreen() {
     if (missingClass) { setMessage(`Select a grade and class for ${missingClass.firstName || 'each child'}.`); return; }
 
     setSubmitting(true);
+    setInvite(null);
     try {
       // Sequential on purpose: the first child (when creating a new parent
       // account) creates the guardian; later children re-send the same
@@ -107,7 +110,7 @@ export function StudentManagementScreen() {
       // instead of making a duplicate — that only works if each request
       // finishes before the next starts.
       for (const child of validChildren) {
-        await api.addStudent(token, {
+        const result = await api.addStudent(token, {
           firstName: child.firstName,
           lastName: child.lastName,
           studentNumber: child.studentNumber,
@@ -120,9 +123,11 @@ export function StudentManagementScreen() {
           guardian: guardianForm.guardianId
             ? { id: guardianForm.guardianId, relationship: guardianForm.relationship }
             : guardianForm.guardianEmail
-              ? { fullName: guardianForm.guardianName, email: guardianForm.guardianEmail, phone: guardianForm.guardianPhone, relationship: guardianForm.relationship, temporaryPassword: guardianForm.temporaryPassword }
+              ? { fullName: guardianForm.guardianName, email: guardianForm.guardianEmail, phone: guardianForm.guardianPhone, relationship: guardianForm.relationship }
               : undefined,
         });
+        // Only the request that created the parent's account carries an invite.
+        if (result.emailSent !== undefined) setInvite({ name: guardianForm.guardianName.trim(), result });
       }
       setChildren([emptyChild(setup?.gradeLevels[0]?.id || '')]);
       setGuardianForm({ ...emptyGuardianForm, schoolYearId: activeYear?.id || '' });
@@ -160,6 +165,7 @@ export function StudentManagementScreen() {
       {canManageSchool && <button type="button" className={`subtab${tab === 'register' ? ' subtab-active' : ''}`} onClick={() => setTab('register')}>Register a Student</button>}
     </div>
     {message && <div className="card">{message}</div>}
+    {invite && <InviteResult name={invite.name} result={invite.result} onDismiss={() => setInvite(null)} />}
 
     {tab === 'register' && (
       <>
@@ -197,7 +203,7 @@ export function StudentManagementScreen() {
           <p className="form-title">Parent / Guardian</p>
           <p className="field-label">Link an existing parent, or create one below — applies to every child above.</p>
           <select className="input" value={guardianForm.guardianId} onChange={e => setGuardianField('guardianId', e.target.value)}><option value="">Create new parent account</option>{setup?.guardians.map(g => <option key={g.id} value={g.id}>{g.fullName} — {g.email}</option>)}</select>
-          {!guardianForm.guardianId && <><input className="input" placeholder="Parent full name" value={guardianForm.guardianName} onChange={e => setGuardianField('guardianName', e.target.value)} /><input className="input" type="email" placeholder="Parent email" value={guardianForm.guardianEmail} onChange={e => setGuardianField('guardianEmail', e.target.value)} /><input className="input" placeholder="Phone" value={guardianForm.guardianPhone} onChange={e => setGuardianField('guardianPhone', e.target.value)} /><input className="input" type="password" placeholder="Temporary password" value={guardianForm.temporaryPassword} onChange={e => setGuardianField('temporaryPassword', e.target.value)} /></>}
+          {!guardianForm.guardianId && <><input className="input" placeholder="Parent full name" value={guardianForm.guardianName} onChange={e => setGuardianField('guardianName', e.target.value)} /><input className="input" type="email" placeholder="Parent email" value={guardianForm.guardianEmail} onChange={e => setGuardianField('guardianEmail', e.target.value)} /><input className="input" placeholder="Phone" value={guardianForm.guardianPhone} onChange={e => setGuardianField('guardianPhone', e.target.value)} /><p className="field-label" style={{ margin: 0 }}>The parent gets an email with a link to choose their own password.</p></>}
           <button className="btn btn-primary" onClick={submit} disabled={submitting}>{submitting ? 'Adding…' : children.length > 1 ? `Add ${children.length} Students` : 'Add Student'}</button>
         </div>
       </>
@@ -209,7 +215,7 @@ export function StudentManagementScreen() {
           <div className="tile-grid" style={{ marginBottom: 12 }}>
             <SummaryTile label="Present Today" value={attendanceSummary.present} accentColor="var(--green)" />
             <SummaryTile label="Absent Today" value={attendanceSummary.absent} accentColor="var(--red)" />
-            <SummaryTile label="Sick Today" value={attendanceSummary.sick} accentColor="var(--amber)" />
+            <SummaryTile label="Sick Today" value={attendanceSummary.sick} accentColor="var(--amber-text)" />
             <SummaryTile label="Late Today" value={attendanceSummary.late} accentColor="var(--purple)" />
           </div>
         )}

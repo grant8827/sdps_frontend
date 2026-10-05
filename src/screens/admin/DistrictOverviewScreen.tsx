@@ -39,7 +39,7 @@ export function DistrictOverviewScreen() {
             <SummaryTile label="Students" value={school.students} />
             <SummaryTile label="Teachers" value={school.teachers} />
             <SummaryTile label="Present now" value={school.presentToday} accentColor="var(--green)" />
-            <SummaryTile label="Pending requests" value={school.pendingRequests} accentColor="var(--amber)" />
+            <SummaryTile label="Pending requests" value={school.pendingRequests} accentColor="var(--amber-text)" />
             <SummaryTile label="Adults awaiting approval" value={school.pendingGuardianApprovals} accentColor="var(--purple)" />
           </div>
         </div>

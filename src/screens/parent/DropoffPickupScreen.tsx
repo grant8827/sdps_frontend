@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Screen } from '../../components/Screen';
 import { useAuth } from '../../context/AuthContext';
 import type { Child } from '../../types';
-import { CHILD_STATUS_COLOR, CHILD_STATUS_LABEL } from '../../utils/childStatus';
+import { CHILD_STATUS_COLOR, CHILD_STATUS_LABEL, CHILD_STATUS_TEXT_COLOR } from '../../utils/childStatus';
 import { api } from '../../services/api';
 import { isAtCampus, type Position } from '../../utils/geofence';
 
@@ -80,7 +80,7 @@ export function DropoffPickupScreen() {
           <div key={child.id} className="card">
             <div className="card-header">
               <span className="quick-action-title" style={{ fontSize: 17 }}>{child.fullName}</span>
-              <span className="pill" style={{ backgroundColor: CHILD_STATUS_COLOR[child.status] }}>
+              <span className="pill" style={{ backgroundColor: CHILD_STATUS_COLOR[child.status], color: CHILD_STATUS_TEXT_COLOR[child.status] }}>
                 {CHILD_STATUS_LABEL[child.status]}
               </span>
             </div>

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { COMPANY_NAME, LEGAL_DOCUMENTS } from '../legal/documents';
+import { BrandLogo } from './BrandLogo';
 
 interface FooterLink { label: string; to: string }
 
@@ -38,6 +39,7 @@ export function SiteFooter() {
     : [
       { label: 'Features', to: '/#features' },
       { label: 'How it works', to: '/#how-it-works' },
+      { label: 'Safety & privacy', to: '/#safety' },
       { label: "Who it's for", to: '/#roles' },
       { label: 'Log in', to: '/login' },
       { label: 'Register your school', to: '/register' },
@@ -48,8 +50,7 @@ export function SiteFooter() {
       <div className="footer-main">
         <div className="footer-brand">
           <Link to="/" className="topbar-brand">
-            <span className="topbar-badge">🏫</span>
-            <span>School Drop-off &amp; Pick-up</span>
+            <BrandLogo height={56} />
           </Link>
           <p className="footer-tagline">
             Faster, safer drop-offs and pick-ups for parents, teachers and school staff — on the web and on iPhone and Android.

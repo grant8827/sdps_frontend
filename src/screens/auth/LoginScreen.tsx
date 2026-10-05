@@ -76,6 +76,8 @@ export function LoginScreen() {
           />
         </div>
 
+        <p className="form-aside"><Link to="/forgot-password">Forgot password?</Link></p>
+
         {error ? <p className="form-error">{error}</p> : null}
 
         <button type="submit" className="btn btn-primary btn-block" disabled={isAuthenticating}>

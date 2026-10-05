@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { LogoutButton } from './LogoutButton';
+import { BrandLogo } from '../components/BrandLogo';
 
 /** Persistent app bar shown above every role's tabs, mirroring the RN navigators' headerRight. */
 export function TopBar({ menuOpen, onToggleMenu }: { menuOpen: boolean; onToggleMenu: () => void }) {
@@ -8,8 +9,7 @@ export function TopBar({ menuOpen, onToggleMenu }: { menuOpen: boolean; onToggle
   return (
     <header className="topbar">
       <div className="topbar-brand">
-        <span className="topbar-badge">🏫</span>
-        <span>School Drop-off &amp; Pick-up</span>
+        <BrandLogo height={38} />
       </div>
       <div className="topbar-actions">
         {schools.length > 1 && (

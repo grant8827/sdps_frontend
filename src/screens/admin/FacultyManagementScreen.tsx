@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Screen } from '../../components/Screen';
+import { InviteResult } from '../../components/InviteResult';
 import { useAuth } from '../../context/AuthContext';
-import { api, type ClassRow, type StaffRole, type StaffRow } from '../../services/api';
+import { api, type ClassRow, type InviteResult as InviteResultData, type StaffRole, type StaffRow } from '../../services/api';
 
-const emptyForm = { fullName: '', email: '', password: '', classId: '', photoDataUrl: '', role: 'teacher' as StaffRole };
+const emptyForm = { fullName: '', email: '', classId: '', photoDataUrl: '', role: 'teacher' as StaffRole };
 
 const ROLE_LABELS: Record<StaffRow['role'], string> = { teacher: 'Teacher', school_admin: 'Admin', staff: 'Front Desk / Office Staff' };
 const ROLE_OPTIONS: { value: StaffRole; label: string }[] = [
@@ -20,6 +21,9 @@ type Tab = 'staff' | 'register';
  * Add Staff creates one, with a role picker that decides what kind of
  * account they get (teacher login vs admin-dashboard login) — the
  * classroom field only makes sense, and only shows, for the Teacher role.
+ * Nobody types a password for someone else: each new person gets an
+ * email link to choose their own, and "Resend invite" / "Email reset
+ * link" sends a fresh one.
  */
 export function FacultyManagementScreen() {
   const { token, user } = useAuth();
@@ -29,6 +33,7 @@ export function FacultyManagementScreen() {
   const [form, setForm] = useState(emptyForm);
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [invite, setInvite] = useState<{ name: string; result: InviteResultData } | null>(null);
 
   const load = async () => {
     if (!token) return;
@@ -51,22 +56,22 @@ export function FacultyManagementScreen() {
   const submit = async () => {
     if (!token) return;
     setMessage('');
-    if (!form.fullName.trim() || !form.email.trim() || !form.password) { setMessage('Full name, email, and password are required.'); return; }
-    if (form.password.length < 8) { setMessage('The password must be at least 8 characters.'); return; }
+    setInvite(null);
+    if (!form.fullName.trim() || !form.email.trim()) { setMessage('Full name and email are required.'); return; }
     setSubmitting(true);
     try {
-      const { restored } = await api.addStaff(token, {
+      const result = await api.addStaff(token, {
         fullName: form.fullName,
         email: form.email,
-        password: form.password,
         photoDataUrl: form.photoDataUrl || undefined,
         role: form.role,
         classId: form.role === 'teacher' ? form.classId || undefined : undefined,
       });
       const roleLabel = ROLE_LABELS[form.role === 'admin' ? 'school_admin' : form.role === 'front_desk' ? 'staff' : 'teacher'];
-      setMessage(restored
-        ? `${form.fullName.trim()} was on your staff before and has been added back as ${roleLabel}, with the password you entered.`
-        : `${roleLabel} added.`);
+      setMessage(result.restored
+        ? `${form.fullName.trim()} was on your staff before and has been added back as ${roleLabel}. They can sign in with their old password or choose a new one from the email link.`
+        : `${form.fullName.trim()} was added as ${roleLabel}.`);
+      setInvite({ name: form.fullName.trim(), result });
       setForm(emptyForm);
       setTab('staff');
       await load();
@@ -89,6 +94,12 @@ export function FacultyManagementScreen() {
     try { await api.resetStaffMfa(token, member.id); setMessage(`Two-step verification reset for ${member.fullName}.`); await load(); }
     catch (error) { setMessage(error instanceof Error ? error.message : 'Could not reset two-step verification'); }
   };
+  const sendLink = async (member: StaffRow) => {
+    if (!token) return;
+    setMessage(''); setInvite(null);
+    try { setInvite({ name: member.fullName, result: await api.sendAccountLink(token, member.id) }); }
+    catch (error) { setMessage(error instanceof Error ? error.message : 'Could not send the link'); }
+  };
   const remove = async (member: StaffRow) => {
     if (!token || !window.confirm(`Delete ${member.fullName}? This removes their account and cannot be undone.`)) return;
     try { await api.deleteStaff(token, member.id); await load(); }
@@ -102,6 +113,7 @@ export function FacultyManagementScreen() {
         <button type="button" className={`subtab${tab === 'register' ? ' subtab-active' : ''}`} onClick={() => setTab('register')}>Add Staff</button>
       </div>
       {message && <div className="card">{message}</div>}
+      {invite && <InviteResult name={invite.name} result={invite.result} onDismiss={() => setInvite(null)} />}
 
       {tab === 'register' && (
         <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -124,7 +136,7 @@ export function FacultyManagementScreen() {
 
           <input className="input" placeholder="Full Name" value={form.fullName} onChange={e => set('fullName', e.target.value)} />
           <input className="input" placeholder="Email" type="email" value={form.email} onChange={e => set('email', e.target.value)} />
-          <input className="input" placeholder="Password (at least 8 characters)" type="password" value={form.password} onChange={e => set('password', e.target.value)} />
+          <p className="field-label" style={{ margin: 0 }}>They'll get an email with a link to choose their own password.</p>
 
           {form.role === 'teacher' && (
             <select className="input" value={form.classId} onChange={e => set('classId', e.target.value)}>
@@ -155,6 +167,9 @@ export function FacultyManagementScreen() {
                   <td><span className="pill" style={{ backgroundColor: member.active ? 'var(--green)' : 'var(--red)' }}>{member.active ? 'Active' : 'Suspended'}</span></td>
                   <td className="actions-cell">
                     <button type="button" className="btn btn-secondary btn-sm" onClick={() => toggleSuspend(member)}>{member.active ? 'Suspend' : 'Reactivate'}</button>
+                    {member.active && member.id !== user?.id && (
+                      <button type="button" className="btn btn-secondary btn-sm" onClick={() => sendLink(member)}>{member.needsSetup ? 'Resend invite' : 'Email reset link'}</button>
+                    )}
                     {member.mfaEnabled && member.id !== user?.id && (
                       <button type="button" className="btn btn-secondary btn-sm" onClick={() => resetMfa(member)}>Reset 2-step</button>
                     )}

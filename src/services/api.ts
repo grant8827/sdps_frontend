@@ -73,6 +73,13 @@ async function downloadFile(path: string, token: string, fallbackName: string): 
   URL.revokeObjectURL(url);
 }
 
+/**
+ * What creating an account returns about its invite email. When the email
+ * couldn't be sent (email not set up yet, or delivery failed), `setupLink`
+ * is the one-time link to pass on another way.
+ */
+export interface InviteResult { emailSent?: boolean; setupLink?: string }
+
 /** A failed API call, with its HTTP status (e.g. 410 = a sign-in step expired; start over). */
 export class ApiError extends Error {
   constructor(message: string, public readonly status: number) {
@@ -81,6 +88,12 @@ export class ApiError extends Error {
 }
 
 export const api = {
+  forgotPassword: (email: string) => request<{ message: string }>('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
+  checkAccountLink: (token: string) =>
+    request<{ purpose: 'INVITE' | 'RESET'; fullName: string; email: string }>('/auth/account-link', { method: 'POST', body: JSON.stringify({ token }) }),
+  setPassword: (token: string, password: string) => request<{ email: string }>('/auth/set-password', { method: 'POST', body: JSON.stringify({ token, password }) }),
+  /** Emails a staff member or parent a fresh invite (never set up) or password reset link. */
+  sendAccountLink: (token: string, userId: string) => request<InviteResult>(`/admin/members/${userId}/send-link`, { method: 'POST' }, token),
   login: (identifier: string, password: string) => request<LoginResult>('/auth/login', { method: 'POST', body: JSON.stringify({ identifier, password }) }),
   registerSchool: (input: { schoolName: string; campusName: string; campusAddress?: string; adminFullName: string; email: string; password: string }) =>
     request<LoginResult>('/auth/register-school', { method: 'POST', body: JSON.stringify(input) }),
@@ -136,7 +149,7 @@ export const api = {
   updateCampus: (token: string, campusId: string, input: { name?: string; address?: string; geofenceRadius?: number; startTime?: string; dismissalTime?: string; extendedTime?: string }) =>
     request<void>(`/admin/campuses/${campusId}`, { method: 'PATCH', body: JSON.stringify(input) }, token),
   students: (token: string) => request<Student[]>('/admin/students', {}, token),
-  addStudent: (token: string, input: unknown) => request<{ id: string }>('/admin/students', { method: 'POST', body: JSON.stringify(input) }, token),
+  addStudent: (token: string, input: unknown) => request<{ id: string } & InviteResult>('/admin/students', { method: 'POST', body: JSON.stringify(input) }, token),
   setStudentStatus: (token: string, studentId: string, status: 'ACTIVE' | 'SUSPENDED') =>
     request<void>(`/admin/students/${studentId}`, { method: 'PATCH', body: JSON.stringify({ status }) }, token),
   deleteStudent: (token: string, studentId: string) => request<void>(`/admin/students/${studentId}`, { method: 'DELETE' }, token),
@@ -149,8 +162,8 @@ export const api = {
   activateSchoolYear: (token: string, schoolYearId: string) =>
     request<void>(`/admin/school-years/${schoolYearId}/activate`, { method: 'POST' }, token),
   guardians: (token: string) => request<Guardian[]>('/admin/guardians', {}, token),
-  addGuardian: (token: string, input: { fullName: string; email: string; phone?: string; temporaryPassword: string }) =>
-    request<{ id: string }>('/admin/guardians', { method: 'POST', body: JSON.stringify(input) }, token),
+  addGuardian: (token: string, input: { fullName: string; email: string; phone?: string }) =>
+    request<{ id: string } & InviteResult>('/admin/guardians', { method: 'POST', body: JSON.stringify(input) }, token),
   setGuardianActive: (token: string, guardianId: string, active: boolean) =>
     request<void>(`/admin/guardians/${guardianId}`, { method: 'PATCH', body: JSON.stringify({ active }) }, token),
   deleteGuardian: (token: string, guardianId: string) => request<void>(`/admin/guardians/${guardianId}`, { method: 'DELETE' }, token),
@@ -168,13 +181,13 @@ export const api = {
   addClass: (token: string, input: { name: string; gradeLevelId: string; roomName?: string; schoolYearId: string; campusId?: string }) =>
     request<{ id: string }>('/admin/classes', { method: 'POST', body: JSON.stringify(input) }, token),
   teachers: (token: string) => request<TeacherRow[]>('/admin/teachers', {}, token),
-  addTeacher: (token: string, input: { fullName: string; email: string; password: string; photoDataUrl?: string; classId?: string }) =>
-    request<{ id: string }>('/admin/teachers', { method: 'POST', body: JSON.stringify(input) }, token),
+  addTeacher: (token: string, input: { fullName: string; email: string; photoDataUrl?: string; classId?: string }) =>
+    request<{ id: string } & InviteResult>('/admin/teachers', { method: 'POST', body: JSON.stringify(input) }, token),
   updateTeacher: (token: string, teacherId: string, input: { fullName?: string; photoDataUrl?: string; classId?: string | null }) =>
     request<void>(`/admin/teachers/${teacherId}`, { method: 'PATCH', body: JSON.stringify(input) }, token),
   staff: (token: string) => request<StaffRow[]>('/admin/staff', {}, token),
-  addStaff: (token: string, input: { fullName: string; email: string; password: string; photoDataUrl?: string; classId?: string; role: StaffRole }) =>
-    request<{ id: string; restored: boolean }>('/admin/staff', { method: 'POST', body: JSON.stringify(input) }, token),
+  addStaff: (token: string, input: { fullName: string; email: string; photoDataUrl?: string; classId?: string; role: StaffRole }) =>
+    request<{ id: string; restored: boolean } & InviteResult>('/admin/staff', { method: 'POST', body: JSON.stringify(input) }, token),
   setStaffStatus: (token: string, staffId: string, active: boolean) =>
     request<void>(`/admin/staff/${staffId}`, { method: 'PATCH', body: JSON.stringify({ active }) }, token),
   deleteStaff: (token: string, staffId: string) => request<void>(`/admin/staff/${staffId}`, { method: 'DELETE' }, token),
@@ -185,8 +198,8 @@ export const api = {
     request<(Omit<Notice, 'read'> & { read: number })[]>('/me/notices', {}, token)
       .then(rows => rows.map(row => ({ ...row, read: Boolean(row.read) }))),
   markNoticeRead: (token: string, noticeId: string) => request<void>(`/notices/${noticeId}/read`, { method: 'POST' }, token),
-  inviteGuardian: (token: string, input: { fullName: string; email: string; phone?: string; relationship: string; temporaryPassword: string }) =>
-    request<{ id: string; status: 'PENDING' }>('/me/guardians', { method: 'POST', body: JSON.stringify(input) }, token),
+  inviteGuardian: (token: string, input: { fullName: string; email: string; phone?: string; relationship: string }) =>
+    request<{ id: string; status: 'PENDING' } & InviteResult>('/me/guardians', { method: 'POST', body: JSON.stringify(input) }, token),
   myGuardians: (token: string) => request<MyGuardians>('/me/guardians', {}, token),
   guardianRequests: (token: string) => request<GuardianRequest[]>('/admin/guardian-requests', {}, token),
   approveGuardianRequest: (token: string, batchId: string, canManage: boolean) =>
@@ -308,6 +321,8 @@ export interface Guardian {
   email: string;
   phone?: string;
   active: boolean;
+  /** Invited but hasn't chosen a password yet. */
+  needsSetup?: boolean;
   children: { id: string; fullName: string }[];
 }
 export interface ClassRow {
@@ -388,6 +403,8 @@ export interface StaffRow {
   photoUrl?: string;
   active: boolean;
   mfaEnabled?: boolean;
+  /** Invited but hasn't chosen a password yet. */
+  needsSetup?: boolean;
   /** Raw membership role as stored — 'school_admin' is the Admin role, 'staff' is Front Desk / Office Staff. */
   role: 'teacher' | 'school_admin' | 'staff';
   classId?: string;

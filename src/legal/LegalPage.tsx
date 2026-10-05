@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { PublicNavbar } from '../marketing/PublicNavbar';
 import { LEGAL_DOCUMENTS } from './documents';
 import { Markdown } from './Markdown';
+import { BrandLogo } from '../components/BrandLogo';
 
 /** /legal/:slug — one policy document, readable whether or not you're signed in. */
 export function LegalPage() {
@@ -24,7 +25,7 @@ export function LegalPage() {
       {user ? (
         <header className="public-nav">
           <div className="public-nav-inner">
-            <Link to="/" className="topbar-brand"><span className="topbar-badge">🏫</span><span>School Drop-off &amp; Pick-up</span></Link>
+            <Link to="/" className="topbar-brand"><BrandLogo height={44} /></Link>
             <Link to="/" className="nav-login-link">← Back to your dashboard</Link>
           </div>
         </header>

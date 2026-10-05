@@ -4,6 +4,8 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { HomePage } from './marketing/HomePage';
 import { LoginScreen } from './screens/auth/LoginScreen';
 import { RegisterSchoolScreen } from './screens/auth/RegisterSchoolScreen';
+import { ForgotPasswordScreen } from './screens/auth/ForgotPasswordScreen';
+import { SetPasswordScreen } from './screens/auth/SetPasswordScreen';
 
 import { ParentLayout } from './navigation/ParentLayout';
 import { HomeScreen as ParentHomeScreen } from './screens/parent/HomeScreen';
@@ -57,6 +59,8 @@ function AppRoutes() {
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginScreen />} />
         <Route path="/register" element={<RegisterSchoolScreen />} />
+        <Route path="/forgot-password" element={<ForgotPasswordScreen />} />
+        <Route path="/set-password" element={<SetPasswordScreen />} />
         <Route path="/legal/:slug" element={<LegalPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
@@ -70,6 +74,8 @@ function AppRoutes() {
       <Route path="/" element={<Navigate to={homePath} replace />} />
       <Route path="/login" element={<Navigate to={homePath} replace />} />
       <Route path="/register" element={<Navigate to={homePath} replace />} />
+      <Route path="/forgot-password" element={<Navigate to={homePath} replace />} />
+      <Route path="/set-password" element={<SetPasswordScreen />} />
       <Route path="/legal/:slug" element={<LegalPage />} />
 
       {user.role === 'parent' && (

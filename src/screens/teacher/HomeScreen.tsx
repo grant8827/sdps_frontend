@@ -33,8 +33,8 @@ export function HomeScreen() {
   return (
     <Screen title={`${getTimeOfDayGreeting()}, ${user?.fullName ?? ''}`} subtitle={getFriendlyDate()}>
       <div className="tile-grid">
-        <SummaryTile label="Pending Requests" value={pending.length} accentColor="#F59E0B" />
-        <SummaryTile label="Present Today" value={presentCount} accentColor="#16A34A" />
+        <SummaryTile label="Pending Requests" value={pending.length} accentColor="var(--amber-text)" />
+        <SummaryTile label="Present Today" value={presentCount} accentColor="#39A844" />
         <SummaryTile label="Absent Today" value={absentCount} accentColor="#DC2626" />
       </div>
 

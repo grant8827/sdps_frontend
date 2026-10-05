@@ -164,7 +164,7 @@ export function SchoolSetupScreen() {
                       </td>
                       <td>{school?.name}</td>
                       <td>
-                        <span className="pill" style={{ backgroundColor: suspended ? 'var(--amber)' : 'var(--green)' }}>{suspended ? 'Suspended' : 'Active'}</span>
+                        <span className="pill" style={{ backgroundColor: suspended ? 'var(--amber)' : 'var(--green)', color: suspended ? 'var(--on-amber)' : undefined }}>{suspended ? 'Suspended' : 'Active'}</span>
                       </td>
                       <td>
                         <div className="icon-actions">

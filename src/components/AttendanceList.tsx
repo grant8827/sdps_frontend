@@ -19,7 +19,7 @@ const STATUS_COLOR: Record<AttendanceRow['status'], string> = {
   UNMARKED: 'var(--gray)',
 };
 const STATUS_TEXT_COLOR: Record<AttendanceRow['status'], string> = {
-  PRESENT: '#fff', ABSENT: '#fff', SICK: '#fff', SUSPENDED: '#fff', HOLIDAY: '#fff',
+  PRESENT: '#fff', ABSENT: '#fff', SICK: '#123B6D', SUSPENDED: '#fff', HOLIDAY: '#fff',
   WEEKEND: '#374151', UNMARKED: '#fff',
 };
 // Every date defaults to WEEKEND (Sat/Sun) or UNMARKED (weekday) until a

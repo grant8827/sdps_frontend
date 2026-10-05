@@ -4,7 +4,7 @@ import { QuickAction } from '../../components/QuickAction';
 import { useAuth } from '../../context/AuthContext';
 import { useNotices } from '../../context/NoticesContext';
 import type { Child } from '../../types';
-import { CHILD_STATUS_COLOR, CHILD_STATUS_LABEL } from '../../utils/childStatus';
+import { CHILD_STATUS_COLOR, CHILD_STATUS_LABEL, CHILD_STATUS_TEXT_COLOR } from '../../utils/childStatus';
 import { getFriendlyDate, getTimeOfDayGreeting } from '../../utils/greeting';
 import { api } from '../../services/api';
 
@@ -50,7 +50,7 @@ export function HomeScreen() {
               <span className="quick-action-title" style={{ fontSize: 17, display: 'block' }}>{child.fullName}</span>
               <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{child.className || 'Unassigned'}</span>
             </div>
-            <span className="pill" style={{ backgroundColor: CHILD_STATUS_COLOR[child.status] }}>
+            <span className="pill" style={{ backgroundColor: CHILD_STATUS_COLOR[child.status], color: CHILD_STATUS_TEXT_COLOR[child.status] }}>
               {CHILD_STATUS_LABEL[child.status]}
             </span>
           </div>
