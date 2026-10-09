@@ -101,7 +101,10 @@ export const api = {
   /** Emails a staff member or parent a fresh invite (never set up) or password reset link. */
   sendAccountLink: (token: string, userId: string) => request<InviteResult>(`/admin/members/${userId}/send-link`, { method: 'POST' }, token),
   login: (identifier: string, password: string) => request<LoginResult>('/auth/login', { method: 'POST', body: JSON.stringify({ identifier, password }) }),
-  registerSchool: (input: { schoolName: string; campusName: string; campusAddress?: string; adminFullName: string; email: string; password: string; logoDataUrl?: string }) =>
+  /** Step 1 of registering: emails a 6-digit code to confirm the address. `required: false` means skip the code step. */
+  sendRegistrationCode: (email: string) =>
+    request<{ required: boolean; message?: string }>('/auth/register-school/send-code', { method: 'POST', body: JSON.stringify({ email }) }),
+  registerSchool: (input: { schoolName: string; campusName: string; campusAddress?: string; adminFullName: string; email: string; password: string; logoDataUrl?: string; emailCode?: string }) =>
     request<LoginResult>('/auth/register-school', { method: 'POST', body: JSON.stringify(input) }),
   // Two-step verification during sign-in (mfaToken comes from login/registerSchool).
   mfaVerify: (mfaToken: string, code: string) =>

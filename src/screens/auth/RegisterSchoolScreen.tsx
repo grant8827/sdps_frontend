@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { AuthShell } from '../../components/AuthShell';
 import { MfaSignInStep } from '../../components/MfaSignInStep';
-import { api } from '../../services/api';
+import { api, ApiError } from '../../services/api';
 import { LogoPicker } from '../../components/LogoPicker';
 import { isMfaChallenge, type MfaChallenge } from '../../types';
 
@@ -31,6 +31,11 @@ export function RegisterSchoolScreen() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [challenge, setChallenge] = useState<MfaChallenge | null>(null);
+  // After the form is filled in, the email address is confirmed with a
+  // 6-digit code sent to it; `codeStep` is that second screen.
+  const [codeStep, setCodeStep] = useState(false);
+  const [emailCode, setEmailCode] = useState('');
+  const [notice, setNotice] = useState('');
 
   const set = (key: keyof typeof form, value: string) => setForm(current => ({ ...current, [key]: value }));
 
@@ -53,19 +58,65 @@ export function RegisterSchoolScreen() {
 
     setSubmitting(true);
     try {
-      const result = await api.registerSchool({
-        schoolName: form.schoolName,
-        campusName: form.campusName,
-        campusAddress: form.campusAddress || undefined,
-        adminFullName: form.adminFullName,
-        email: form.email,
-        password: form.password,
-        logoDataUrl: form.logoDataUrl || undefined,
-      });
-      if (isMfaChallenge(result)) setChallenge(result);
-      else await adoptSession(result);
+      const sent = await api.sendRegistrationCode(form.email.trim());
+      if (sent.required) {
+        setEmailCode('');
+        setNotice('');
+        setCodeStep(true);
+      } else {
+        await register();
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not send the confirmation code. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const register = async (code?: string) => {
+    const result = await api.registerSchool({
+      schoolName: form.schoolName,
+      campusName: form.campusName,
+      campusAddress: form.campusAddress || undefined,
+      adminFullName: form.adminFullName,
+      email: form.email.trim(),
+      password: form.password,
+      logoDataUrl: form.logoDataUrl || undefined,
+      emailCode: code,
+    });
+    if (isMfaChallenge(result)) setChallenge(result);
+    else await adoptSession(result);
+  };
+
+  const submitCode = async (e: FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setNotice('');
+    if (!/^\d{6}$/.test(emailCode)) { setError('Enter the 6-digit code from the email.'); return; }
+    setSubmitting(true);
+    try {
+      await register(emailCode);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not register your school. Please try again.');
+      // A problem with the code keeps them here; anything else (a field
+      // the server refused) sends them back to the form to fix it.
+      if (err instanceof ApiError && err.code?.startsWith('EMAIL_CODE_')) setEmailCode('');
+      else setCodeStep(false);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const resendCode = async () => {
+    setError(null);
+    setNotice('');
+    setSubmitting(true);
+    try {
+      await api.sendRegistrationCode(form.email.trim());
+      setEmailCode('');
+      setNotice('A new code is on its way. Only the newest code works.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not send a new code.');
     } finally {
       setSubmitting(false);
     }
@@ -82,6 +133,41 @@ export function RegisterSchoolScreen() {
             onRestart={message => { setChallenge(null); setError(`${message} Your school was created — sign in from the login page to finish.`); }}
           />
         </div>
+      </AuthShell>
+    );
+  }
+
+  if (codeStep) {
+    return (
+      <AuthShell>
+        <form className="form-card" onSubmit={submitCode}>
+          <h2 className="form-title">Confirm your email</h2>
+          <p className="form-subtitle">We emailed a 6-digit code to <strong>{form.email.trim()}</strong>. Enter it to finish registering {form.schoolName.trim()}.</p>
+          <div className="field-group">
+            <input
+              className="input pin-input"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              aria-label="6-digit code"
+              placeholder="000000"
+              autoFocus
+              value={emailCode}
+              onChange={e => setEmailCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            />
+          </div>
+          <p className="field-hint" style={{ marginBottom: 12 }}>The code works for 10 minutes. Check your spam folder if it hasn't arrived.</p>
+
+          {notice ? <p className="field-hint" role="status" style={{ marginBottom: 12 }}>{notice}</p> : null}
+          {error ? <p className="form-error">{error}</p> : null}
+
+          <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
+            {submitting ? 'Please wait…' : 'Confirm and register'}
+          </button>
+          <div className="action-row" style={{ justifyContent: 'center', marginTop: 12 }}>
+            <button type="button" className="link-button" onClick={resendCode} disabled={submitting}>Send a new code</button>
+            <button type="button" className="link-button" onClick={() => { setCodeStep(false); setError(null); }} disabled={submitting}>Change details</button>
+          </div>
+        </form>
       </AuthShell>
     );
   }
@@ -122,7 +208,7 @@ export function RegisterSchoolScreen() {
         {error ? <p className="form-error">{error}</p> : null}
 
         <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
-          {submitting ? 'Setting up your school…' : 'Register School'}
+          {submitting ? 'Please wait…' : 'Register School'}
         </button>
       </form>
 
