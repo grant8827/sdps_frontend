@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { AuthShell } from '../../components/AuthShell';
 import { MfaSignInStep } from '../../components/MfaSignInStep';
 import { api } from '../../services/api';
+import { LogoPicker } from '../../components/LogoPicker';
 import { isMfaChallenge, type MfaChallenge } from '../../types';
 
 const emptyForm = {
@@ -14,6 +15,7 @@ const emptyForm = {
   email: '',
   password: '',
   confirmPassword: '',
+  logoDataUrl: '',
 };
 
 /**
@@ -58,6 +60,7 @@ export function RegisterSchoolScreen() {
         adminFullName: form.adminFullName,
         email: form.email,
         password: form.password,
+        logoDataUrl: form.logoDataUrl || undefined,
       });
       if (isMfaChallenge(result)) setChallenge(result);
       else await adoptSession(result);
@@ -95,6 +98,12 @@ export function RegisterSchoolScreen() {
         <div className="btn-row" style={{ marginBottom: 12 }}>
           <input className="input" placeholder="Campus name" value={form.campusName} onChange={e => set('campusName', e.target.value)} />
           <input className="input" placeholder="Campus address (optional)" value={form.campusAddress} onChange={e => set('campusAddress', e.target.value)} />
+        </div>
+
+        <p className="field-label" style={{ margin: '4px 0 8px' }}>School logo (optional)</p>
+        <div className="field-group">
+          <LogoPicker value={form.logoDataUrl} onChange={dataUrl => set('logoDataUrl', dataUrl)} disabled={submitting} />
+          <p className="field-hint" style={{ margin: '6px 0 0' }}>Shown on the dashboard for your parents, teachers and staff. You can add or change it later in School Setup.</p>
         </div>
 
         <p className="field-label" style={{ margin: '4px 0 8px' }}>Your admin account</p>

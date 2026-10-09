@@ -23,9 +23,9 @@ This page describes how **GGHighTech LLC** protects School Drop-off & Pick-up (t
 - **Lockout:** repeated failed sign-ins lock that account name, and that network address, for 15 minutes. Five wrong two-step codes cancel the sign-in attempt.
 - **Sessions** expire after 24 hours and can be ended by an administrator.
 
-## Pickup verification
+## Pickup requests and release
 
-Releasing a child requires a **one-time 6-digit code** shown only on the phone of the adult who requested the pickup. Five wrong codes cancel the request. If the code can't be shown, only an administrator can release the child, and must record how the adult's identity was checked.
+A pickup can only be requested by an adult the school has approved for that child, only from the school's pickup area, and only after that adult enters their private 6-digit pickup PIN. The PIN is stored only as a salted hash, and repeated wrong PINs temporarily lock pickup requests for that account. The child's teacher or a school administrator confirms each release, and the app records who requested it and who confirmed it. School staff remain responsible for checking who is collecting a child.
 
 ## Authorized adults
 

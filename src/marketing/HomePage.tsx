@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { SiteFooter } from '../components/SiteFooter';
 import {
-  ArrowRightIcon, BellIcon, BuildingIcon, CarIcon, CheckIcon, ClipboardIcon, KeyIcon, ListIcon, LockIcon, PhoneIcon,
+  ArrowRightIcon, BellIcon, BuildingIcon, CarIcon, CheckIcon, ClipboardIcon, ListIcon, LockIcon, PhoneIcon,
   ShieldCheckIcon, UsersCheckIcon,
 } from './icons';
 import { PublicNavbar } from './PublicNavbar';
@@ -13,14 +13,14 @@ type Tone = 'blue' | 'green' | 'amber' | 'navy';
 
 const HIGHLIGHTS: { value: string; label: string }[] = [
   { value: '1 tap', label: 'to check in from the car line' },
-  { value: '6-digit', label: 'one-time code at every pickup' },
+  { value: 'On site', label: 'requests only from the school' },
   { value: 'Live', label: 'queue for teachers and the office' },
   { value: 'Every', label: 'release recorded in an audit log' },
 ];
 
 const FEATURES: { icon: ReactNode; tone: Tone; title: string; body: string }[] = [
   { icon: <CarIcon />, tone: 'blue', title: 'Check in from the car line', body: "Parents tap Drop Off or Pick Up when they arrive. The app confirms they're at the school before the request is sent." },
-  { icon: <KeyIcon />, tone: 'amber', title: 'Verified pickups', body: "Each pickup gets a one-time code on the parent's phone. The teacher enters it before releasing the child." },
+  { icon: <ShieldCheckIcon />, tone: 'amber', title: 'A private PIN for every pickup', body: "Requests can only be sent from the school's pickup area, and each pickup needs the parent's own 6-digit PIN, so a request can't come from a phone someone else picked up." },
   { icon: <ListIcon />, tone: 'blue', title: 'Live queue', body: 'Teachers see their class, the office sees the whole school. Confirm or decline in one tap.' },
   { icon: <ClipboardIcon />, tone: 'green', title: 'Attendance that keeps itself', body: 'An accepted drop-off marks the student present, and late arrivals are flagged automatically.' },
   { icon: <UsersCheckIcon />, tone: 'navy', title: 'Approved adults only', body: 'Parents can ask to add a grandparent or sitter. Nobody gets access until the school approves.' },
@@ -28,13 +28,14 @@ const FEATURES: { icon: ReactNode; tone: Tone; title: string; body: string }[] =
 ];
 
 const STEPS = [
-  { title: 'Arrive and tap', body: "The parent opens the app at the school and taps Drop Off or Pick Up. Location confirms they're on site." },
-  { title: 'Show the code', body: 'For pickups, the parent shows the one-time code on their phone. It only works for this pickup.' },
+  { title: 'Arrive and tap', body: "The parent opens the app at the school and taps Drop Off or Pick Up. Location confirms they're on site, and a pickup asks for their private PIN." },
+  { title: 'The teacher sees it', body: "The request appears in the teacher's live queue with the child, the class and who is asking." },
   { title: 'Release and record', body: "The teacher confirms. Attendance updates, the parent's app updates, and the release is logged." },
 ];
 
 const SAFETY = [
-  'One-time pickup codes; an administrator ID check is the only override',
+  "Drop-off and pick-up requests work only at the school's pickup area",
+  'Every pickup request needs the parent\'s private 6-digit PIN',
   'New adults need school approval before they see anything',
   'Two-step verification for every administrator',
   'A tamper-proof audit log of releases, record views and changes',
@@ -51,7 +52,7 @@ const ROLES: { icon: ReactNode; tone: Tone; title: string; body: string; items: 
   {
     icon: <ClipboardIcon />, tone: 'green', title: 'Teachers',
     body: "Release students with confidence and keep the class roster current without extra paperwork.",
-    items: ['Live queue with pickup codes', 'Class attendance', 'Message families'],
+    items: ['Live drop-off and pick-up queue', 'Class attendance', 'Message families'],
   },
   {
     icon: <BuildingIcon />, tone: 'navy', title: 'Administrators & districts',
@@ -63,8 +64,8 @@ const ROLES: { icon: ReactNode; tone: Tone; title: string; body: string; items: 
 /**
  * Public marketing home page — the front door for logged-out visitors.
  * The hero mockup on the right is built from real markup (not an image)
- * so it stays sharp and on-brand: the parent's pickup code above the
- * teacher's queue card that asks for it.
+ * so it stays sharp and on-brand: the parent's pickup request above the
+ * teacher's queue card that confirms it.
  */
 export function HomePage() {
   return (
@@ -79,7 +80,7 @@ export function HomePage() {
               Safer school drop-off and pick-up, <span className="home-accent">from the car line to the classroom.</span>
             </h1>
             <p className="home-hero-subtitle">
-              Parents check in from the car. Teachers release each child with a one-time code. Administrators see the whole school update live, with a record of every pickup.
+              Parents check in from the car. Teachers confirm each drop-off and pick-up from a live queue. Administrators see the whole school update live, with a record of every pickup.
             </p>
             <div className="home-hero-actions">
               <Link to="/register" className="btn btn-primary home-btn-lg">Register your school <ArrowRightIcon /></Link>
@@ -104,9 +105,9 @@ export function HomePage() {
                     <span className="mock-pill mock-pill-amber">Pick-up requested</span>
                   </div>
                 </div>
-                <div className="mock-code-box">
-                  <span>Show this pickup code to the teacher</span>
-                  <strong>482 913</strong>
+                <div className="mock-status-box">
+                  <strong>Request sent</strong>
+                  <span>Waiting for the teacher to confirm</span>
                 </div>
               </div>
               <div className="mock-card mock-card-dim">
@@ -126,7 +127,6 @@ export function HomePage() {
                 <span className="mock-avatar">R</span>
                 <div className="mock-grow"><strong>Riley Parker</strong><span>Parent: Parker P. · 2:58 PM</span></div>
               </div>
-              <div className="mock-code-input">4 8 2 9 1 3</div>
               <div className="mock-actions">
                 <span className="mock-btn mock-btn-blue">Confirm</span>
                 <span className="mock-btn mock-btn-outline">Decline</span>

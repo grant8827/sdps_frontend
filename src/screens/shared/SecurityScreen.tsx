@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { MfaEnroll } from '../../components/MfaEnroll';
+import { PickupPinCard } from '../../components/PickupPinCard';
 import { RecoveryCodes } from '../../components/RecoveryCodes';
 import { Screen } from '../../components/Screen';
 import { useAuth } from '../../context/AuthContext';
@@ -13,9 +14,10 @@ type Mode = 'idle' | 'enrolling' | 'newCodes' | 'disabling';
  * Teachers and parents can turn it on (and off again, with their
  * password); for admin-dashboard accounts it's required, so it can't be
  * turned off here. Anyone with it on can replace their recovery codes.
+ * Parents also manage their pickup PIN here.
  */
 export function SecurityScreen() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [status, setStatus] = useState<MfaStatus | null>(null);
   const [mode, setMode] = useState<Mode>('idle');
   const [input, setInput] = useState('');
@@ -41,6 +43,7 @@ export function SecurityScreen() {
   return (
     <Screen title="Security" subtitle="Protect your account with a code from your phone as well as your password.">
       {message && <div className="card">{message}</div>}
+      {user?.role === 'parent' && <PickupPinCard />}
       {status && (
         <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 520 }}>
           <div className="card-row" style={{ gap: 8 }}>

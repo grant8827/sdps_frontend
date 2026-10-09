@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { SchoolBadge } from '../../components/SchoolBadge';
 import { Screen } from '../../components/Screen';
 import { QuickAction } from '../../components/QuickAction';
 import { useAuth } from '../../context/AuthContext';
@@ -33,6 +34,7 @@ export function HomeScreen() {
 
   return (
     <Screen title={`${getTimeOfDayGreeting()}, ${firstName}`} subtitle={getFriendlyDate()}>
+      <SchoolBadge />
       <p className="card-title" style={{ margin: '4px 0' }}>Your children</p>
       {children.length === 0 ? (
         <div className="card">

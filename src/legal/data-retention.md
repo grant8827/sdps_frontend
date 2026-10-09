@@ -35,7 +35,7 @@ School administrators can, at any time:
 - **export one student's complete record** (profile and photo, enrollment history, guardians and pickup rights, guardian requests, attendance, drop-off/pick-up history and that student's audit trail) to answer a parent's request or a records request; and
 - **export all of the school's data** (students, parents, staff, classes, attendance, drop-off/pick-up history).
 
-Exports never include passwords, two-step verification secrets or pickup codes. Every export is recorded in the audit log.
+Exports never include passwords or two-step verification secrets. Every export is recorded in the audit log.
 
 ## Deleting
 

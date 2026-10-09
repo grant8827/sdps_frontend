@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Screen } from '../../components/Screen';
 import { useAuth } from '../../context/AuthContext';
-import { QueueList, type QueueVerification } from '../../components/QueueList';
+import { QueueList } from '../../components/QueueList';
 import { api } from '../../services/api';
 import type { QueueItem } from '../../types';
 
@@ -16,7 +16,7 @@ const POLL_MS = 4000;
  * table, so this reflects requests from any client (mobile or web).
  */
 export function LiveQueueScreen() {
-  const { token, canManageSchool } = useAuth();
+  const { token } = useAuth();
   const [tab, setTab] = useState<Tab>('DROP_OFF');
   const [queue, setQueue] = useState<QueueItem[]>([]);
 
@@ -29,11 +29,11 @@ export function LiveQueueScreen() {
     return () => { cancelled = true; clearInterval(interval); };
   }, [token]);
 
-  // Errors propagate to QueueList, which shows them on the card (e.g. a
-  // wrong pickup code); the queue is refreshed either way.
-  const approve = async (item: QueueItem, verification: QueueVerification) => {
+  // Errors propagate to QueueList, which shows them on the card; the
+  // queue is refreshed either way.
+  const approve = async (item: QueueItem) => {
     if (!token) return;
-    try { await api.approveQueueItem(token, item.id, verification); }
+    try { await api.approveQueueItem(token, item.id); }
     finally { api.adminQueue(token).then(setQueue).catch(() => {}); }
   };
 
@@ -51,7 +51,7 @@ export function LiveQueueScreen() {
         <button type="button" className={`subtab${tab === 'DROP_OFF' ? ' subtab-active' : ''}`} onClick={() => setTab('DROP_OFF')}>Drop-off</button>
         <button type="button" className={`subtab${tab === 'PICK_UP' ? ' subtab-active' : ''}`} onClick={() => setTab('PICK_UP')}>Pick-up</button>
       </div>
-      <QueueList items={visible} onApprove={approve} onDecline={decline} allowOverride={canManageSchool} />
+      <QueueList items={visible} onApprove={approve} onDecline={decline} />
     </Screen>
   );
 }

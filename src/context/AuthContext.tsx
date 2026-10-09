@@ -13,7 +13,7 @@ import {
   loadSession,
   saveSession,
 } from '../services/auth/authStorage';
-import { api, onUnauthorized, setActiveSchoolId } from '../services/api';
+import { api, onUnauthorized, setActiveSchoolId, type SupportSession } from '../services/api';
 
 const ADMIN_ROLES = ['school_admin', 'district_admin', 'platform_super_admin'];
 const DASHBOARD_ROLES = [...ADMIN_ROLES, 'staff'];
@@ -48,6 +48,14 @@ interface AuthContextValue {
   activeSchoolId: string | null;
   setActiveSchool: (schoolId: string) => void;
   isDistrictAdmin: boolean;
+  /** Platform administrator role (people who run SDPMPlus), or null. */
+  platformRole: string | null;
+  /** Whether this platform admin's role includes a permission (the API checks it again). */
+  can: (permission: string) => boolean;
+  /** Open support session into one school, if any — the admin screens then show that school. */
+  supportSession: SupportSession | null;
+  startSupport: (schoolId: string, reason: string, allowChanges: boolean) => Promise<void>;
+  exitSupport: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -128,31 +136,71 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const activeSchoolId = schools.length > 1
     ? (schools.some(s => s.schoolId === chosenSchoolId) ? chosenSchoolId : schools[0].schoolId)
     : null;
-  // Set synchronously during render so the first requests already carry it.
-  setActiveSchoolId(activeSchoolId);
 
   const setActiveSchool = useCallback((schoolId: string) => {
     if (session) { try { localStorage.setItem(activeSchoolKey(session.user.id), schoolId); } catch { /* storage blocked */ } }
     setChosenSchoolId(schoolId);
   }, [session]);
 
+  // Platform admins: the current support session comes from the server
+  // (it survives a page reload), and is dropped when it expires.
+  const platform = session?.user.platform ?? null;
+  const [supportSession, setSupportSession] = useState<SupportSession | null>(null);
+  // Until the server has said whether a support session is open, the
+  // router can't know where a platform admin belongs — keep restoring.
+  const [checkedToken, setCheckedToken] = useState<string | null>(null);
+  const token = session?.token ?? null;
+  const platformChecked = !platform || checkedToken === token;
+  useEffect(() => {
+    setSupportSession(null);
+    if (!token || !platform) return;
+    api.platformMe(token)
+      .then(me => setSupportSession(me.supportSession))
+      .catch(() => {})
+      .finally(() => setCheckedToken(token));
+  }, [token, platform]);
+  useEffect(() => {
+    if (!supportSession) return;
+    const timer = setTimeout(() => setSupportSession(null), Math.max(0, supportSession.expiresAt - Date.now()));
+    return () => clearTimeout(timer);
+  }, [supportSession]);
+  const startSupport = useCallback(async (schoolId: string, reason: string, allowChanges: boolean) => {
+    if (!token) return;
+    setSupportSession(await api.startSupportSession(token, { schoolId, reason, allowChanges }));
+  }, [token]);
+  const exitSupport = useCallback(async () => {
+    if (token) await api.endSupportSession(token).catch(() => {});
+    setSupportSession(null);
+  }, [token]);
+  const can = useCallback((permission: string) => Boolean(platform?.permissions.includes(permission)), [platform]);
+
+  // Set synchronously during render so the first requests already carry
+  // it. In a support session the server already knows the school.
+  setActiveSchoolId(supportSession ? null : activeSchoolId);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user: session?.user ?? null,
       token: session?.token ?? null,
-      isRestoring,
+      isRestoring: isRestoring || !platformChecked,
       isAuthenticating,
       login,
       adoptSession,
       logout,
-      canManageSchool: !memberships
+      // In a support session, controls that change data show only when changes were allowed.
+      canManageSchool: supportSession ? supportSession.allowChanges : !memberships
         || memberships.some(m => ADMIN_ROLES.includes(m.role) && (!activeSchoolId || m.schoolId === activeSchoolId)),
       schools,
       activeSchoolId,
       setActiveSchool,
       isDistrictAdmin: Boolean(memberships?.some(m => m.role === 'district_admin')),
+      platformRole: platform?.role ?? null,
+      can,
+      supportSession,
+      startSupport,
+      exitSupport,
     }),
-    [session, memberships, isRestoring, isAuthenticating, login, adoptSession, logout, schools, activeSchoolId, setActiveSchool],
+    [session, memberships, isRestoring, platformChecked, isAuthenticating, login, adoptSession, logout, schools, activeSchoolId, setActiveSchool, platform, can, supportSession, startSupport, exitSupport],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

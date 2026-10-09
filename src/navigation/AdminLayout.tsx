@@ -6,7 +6,9 @@ import { DashboardShell } from './DashboardShell';
 // Front desk staff don't get Faculty, Classes, School Setup, the Audit
 // Log or Data & Privacy — all admin-only on the backend.
 export function AdminLayout() {
-  const { canManageSchool, isDistrictAdmin, activeSchoolId } = useAuth();
+  const { canManageSchool: canManage, isDistrictAdmin, activeSchoolId, supportSession } = useAuth();
+  // A support session sees every section; changes are refused server-side unless allowed.
+  const canManageSchool = canManage || Boolean(supportSession);
   return (
     <DashboardShell
       tabs={[

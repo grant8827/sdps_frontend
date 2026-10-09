@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { LogoPicker } from '../../components/LogoPicker';
 import { Screen } from '../../components/Screen';
 import { useAuth } from '../../context/AuthContext';
 import { EditIcon, PauseIcon, ResumeIcon, TrashIcon } from '../../components/ActionIcons';
@@ -60,6 +61,7 @@ export function SchoolSetupScreen() {
   const [message, setMessage] = useState('');
   const [locationMessage, setLocationMessage] = useState('');
   const [savingLocation, setSavingLocation] = useState(false);
+  const [savingLogo, setSavingLogo] = useState(false);
 
   const load = async () => {
     if (!token) return;
@@ -132,6 +134,22 @@ export function SchoolSetupScreen() {
     }
   };
 
+  // The logo saves as soon as it is chosen (or removed).
+  const saveLogo = async (logoDataUrl: string) => {
+    if (!token) return;
+    setSavingLogo(true);
+    setMessage('');
+    try {
+      await api.updateSchoolProfile(token, { logoDataUrl });
+      await load();
+      setMessage(logoDataUrl ? 'Logo saved.' : 'Logo removed.');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Could not save the logo');
+    } finally {
+      setSavingLogo(false);
+    }
+  };
+
   return (
     <Screen title="School Setup" subtitle="Your school's locations, their pickup areas and hours.">
       <div className="subtabs">
@@ -144,6 +162,12 @@ export function SchoolSetupScreen() {
       {tab === 'profile' && (
         <>
           {message && <div className="card">{message}</div>}
+
+          <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <p className="form-title" style={{ margin: 0 }}>School logo</p>
+            <p className="field-label" style={{ margin: 0 }}>Shown at the top of the dashboard for your parents, teachers and staff.</p>
+            <LogoPicker value={school?.logoUrl ?? ''} onChange={saveLogo} disabled={savingLogo || !school} />
+          </div>
 
           <p className="form-title" style={{ margin: '4px 0' }}>Locations</p>
           <div className="table-wrap">

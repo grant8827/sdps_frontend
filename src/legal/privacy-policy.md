@@ -46,7 +46,7 @@ We use information only to provide the Service to the school: to show the right 
 
 ## Security
 
-We protect information with encryption in transit, strict role-based access, two-step verification for administrators, a one-time code to release each child at pick-up, sign-in lockouts and a tamper-resistant audit log. See our [Security Policy](/legal/security).
+We protect information with encryption in transit, strict role-based access, two-step verification for administrators, location checks on drop-off and pick-up requests, sign-in lockouts and a tamper-resistant audit log. See our [Security Policy](/legal/security).
 
 ## Retention and deletion
 

@@ -5,7 +5,7 @@ interface SummaryTileProps {
 }
 
 /** Stat tile used on Home screens and Admin's Overview. */
-export function SummaryTile({ label, value, accentColor = '#111827' }: SummaryTileProps) {
+export function SummaryTile({ label, value, accentColor = 'var(--text)' }: SummaryTileProps) {
   return (
     <div className="tile">
       <div className="tile-value" style={{ color: accentColor }}>{value}</div>

@@ -1,4 +1,4 @@
-import type { AuthSession, Child, LoginResult, Notice, QueueItem } from '../types';
+import type { AuthSession, Child, LoginResult, Notice, PlatformRole, QueueItem } from '../types';
 
 // Empty by default — a bare `/api${path}` relative fetch, which is
 // correct both for local dev (Vite's server.proxy in vite.config.ts
@@ -51,7 +51,7 @@ async function request<T>(path: string, options: RequestInit = {}, token?: strin
   if (!contentType.includes('application/json') && response.status !== 204) {
     throw new Error('The server is not configured correctly. Please contact support.');
   }
-  if (!response.ok) throw new ApiError(body?.error || 'Request failed', response.status);
+  if (!response.ok) throw new ApiError(body?.error || 'Request failed', response.status, body?.code, body?.triesLeft);
   return body as T;
 }
 
@@ -82,7 +82,13 @@ export interface InviteResult { emailSent?: boolean; setupLink?: string }
 
 /** A failed API call, with its HTTP status (e.g. 410 = a sign-in step expired; start over). */
 export class ApiError extends Error {
-  constructor(message: string, public readonly status: number) {
+  constructor(
+    message: string,
+    public readonly status: number,
+    /** Machine-readable reason some endpoints add, e.g. 'PIN_NOT_SET', 'PIN_WRONG', 'PIN_LOCKED'. */
+    public readonly code?: string,
+    public readonly triesLeft?: number,
+  ) {
     super(message);
   }
 }
@@ -90,12 +96,12 @@ export class ApiError extends Error {
 export const api = {
   forgotPassword: (email: string) => request<{ message: string }>('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
   checkAccountLink: (token: string) =>
-    request<{ purpose: 'INVITE' | 'RESET'; fullName: string; email: string }>('/auth/account-link', { method: 'POST', body: JSON.stringify({ token }) }),
+    request<{ purpose: 'INVITE' | 'RESET' | 'PIN_RESET'; fullName: string; email: string }>('/auth/account-link', { method: 'POST', body: JSON.stringify({ token }) }),
   setPassword: (token: string, password: string) => request<{ email: string }>('/auth/set-password', { method: 'POST', body: JSON.stringify({ token, password }) }),
   /** Emails a staff member or parent a fresh invite (never set up) or password reset link. */
   sendAccountLink: (token: string, userId: string) => request<InviteResult>(`/admin/members/${userId}/send-link`, { method: 'POST' }, token),
   login: (identifier: string, password: string) => request<LoginResult>('/auth/login', { method: 'POST', body: JSON.stringify({ identifier, password }) }),
-  registerSchool: (input: { schoolName: string; campusName: string; campusAddress?: string; adminFullName: string; email: string; password: string }) =>
+  registerSchool: (input: { schoolName: string; campusName: string; campusAddress?: string; adminFullName: string; email: string; password: string; logoDataUrl?: string }) =>
     request<LoginResult>('/auth/register-school', { method: 'POST', body: JSON.stringify(input) }),
   // Two-step verification during sign-in (mfaToken comes from login/registerSchool).
   mfaVerify: (mfaToken: string, code: string) =>
@@ -127,16 +133,25 @@ export const api = {
   myAttendance: (token: string) => request<MyAttendanceChild[]>('/me/attendance', {}, token),
   myClasses: (token: string) => request<MyClassChild[]>('/me/classes', {}, token),
   requestDropOff: (token: string, studentId: string, location: { latitude: number; longitude: number }) => request<{ id: string }>(`/me/students/${studentId}/drop-off`, { method: 'POST', body: JSON.stringify(location) }, token),
-  requestPickUp: (token: string, studentId: string, location: { latitude: number; longitude: number }) => request<{ id: string }>(`/me/students/${studentId}/pick-up`, { method: 'POST', body: JSON.stringify(location) }, token),
+  /** A pickup needs the parent's own 6-digit pickup PIN. */
+  requestPickUp: (token: string, studentId: string, location: { latitude: number; longitude: number }, pin: string) =>
+    request<{ id: string }>(`/me/students/${studentId}/pick-up`, { method: 'POST', body: JSON.stringify({ ...location, pin }) }, token),
+  // Pickup PIN (parents)
+  myPin: (token: string) => request<{ hasPin: boolean }>('/me/pin', {}, token),
+  createPin: (token: string, pin: string) => request<void>('/me/pin', { method: 'POST', body: JSON.stringify({ pin }) }, token),
+  changePin: (token: string, currentPin: string, newPin: string) => request<void>('/me/pin/change', { method: 'POST', body: JSON.stringify({ currentPin, newPin }) }, token),
+  forgotPin: (token: string) => request<{ message: string }>('/me/pin/forgot', { method: 'POST' }, token),
+  setPinFromLink: (linkToken: string, pin: string) => request<void>('/auth/set-pin', { method: 'POST', body: JSON.stringify({ token: linkToken, pin }) }),
   teacherQueue: (token: string) => request<QueueItem[]>('/teacher/queue', {}, token),
   adminQueue: (token: string) => request<QueueItem[]>('/admin/queue', {}, token),
-  /** `code` is the parent's one-time pickup code; `overrideReason` (admins only) releases a pickup without it. */
-  approveQueueItem: (token: string, queueItemId: string, verification: { code?: string; overrideReason?: string } = {}) =>
-    request<void>(`/queue/${queueItemId}/approve`, { method: 'POST', body: JSON.stringify(verification) }, token),
+  approveQueueItem: (token: string, queueItemId: string) => request<void>(`/queue/${queueItemId}/approve`, { method: 'POST' }, token),
   declineQueueItem: (token: string, queueItemId: string) => request<void>(`/queue/${queueItemId}/decline`, { method: 'POST' }, token),
   adminOverview: (token: string) => request<AdminOverview>('/admin/overview', {}, token),
   adminSetup: (token: string) => request<AdminSetup>('/admin/setup', {}, token),
-  updateSchoolProfile: (token: string, input: { name?: string; address?: string; startTime?: string; dismissalTime?: string; extendedTime?: string }) =>
+  /** The signed-in person's school: its name and logo (for the dashboard). */
+  mySchool: (token: string) => request<SchoolBranding>('/me/school', {}, token),
+  /** logoDataUrl: an image replaces the logo, '' removes it, omitted keeps it. */
+  updateSchoolProfile: (token: string, input: { name?: string; address?: string; startTime?: string; dismissalTime?: string; extendedTime?: string; logoDataUrl?: string }) =>
     request<void>('/admin/school', { method: 'PATCH', body: JSON.stringify(input) }, token),
   addCampus: (token: string, input: { name: string; address: string; geofenceRadius?: number; startTime?: string; dismissalTime?: string; extendedTime?: string }) =>
     request<{ id: string; latitude: number; longitude: number }>('/admin/campuses', { method: 'POST', body: JSON.stringify(input) }, token),
@@ -215,12 +230,265 @@ export const api = {
   adminNotices: (token: string) =>
     request<(Omit<Notice, 'read'> & { read: number })[]>('/admin/notices', {}, token)
       .then(rows => rows.map(row => ({ ...row, read: Boolean(row.read) }))),
+  // ---- Platform administration (/api/superadmin) ----
+  platformMe: (token: string) => request<PlatformMe>('/superadmin/me', {}, token),
+  platformSchools: (token: string, query: { search?: string; status?: string; sort?: string; dir?: 'asc' | 'desc'; page?: number; pageSize?: number }) => {
+    const params = new URLSearchParams(Object.entries(query).filter(([, v]) => v !== undefined && v !== '').map(([k, v]) => [k, String(v)]));
+    return request<Paged<PlatformSchoolRow>>(`/superadmin/schools?${params}`, {}, token);
+  },
+  platformSchool: (token: string, schoolId: string) => request<PlatformSchoolDetail>(`/superadmin/schools/${schoolId}`, {}, token),
+  platformCreateSchool: (token: string, input: { name: string; campusName?: string; campusAddress?: string; adminFullName: string; adminEmail: string; timezone?: string }) =>
+    request<{ id: string; code: string } & InviteResult>('/superadmin/schools', { method: 'POST', body: JSON.stringify(input) }, token),
+  platformUpdateSchool: (token: string, schoolId: string, input: { name?: string; timezone?: string }) =>
+    request<void>(`/superadmin/schools/${schoolId}`, { method: 'PATCH', body: JSON.stringify(input) }, token),
+  platformSchoolAction: (token: string, schoolId: string, action: 'suspend' | 'reactivate' | 'archive', reason: string) =>
+    request<void>(`/superadmin/schools/${schoolId}/${action}`, { method: 'POST', body: JSON.stringify({ reason }) }, token),
+  platformAuditLogs: (token: string, filters: { schoolId?: string; action?: string; actor?: string; from?: string; to?: string; before?: PlatformAuditEntry } = {}) => {
+    const params = new URLSearchParams({ limit: '50' });
+    for (const key of ['schoolId', 'action', 'actor', 'from', 'to'] as const) if (filters[key]) params.set(key, filters[key]!);
+    if (filters.before) { params.set('beforeCreatedAt', filters.before.createdAt); params.set('beforeId', filters.before.id); }
+    return request<{ entries: PlatformAuditEntry[]; hasMore: boolean }>(`/superadmin/audit-logs?${params}`, {}, token);
+  },
+  platformDashboard: (token: string, refresh = false) => request<PlatformDashboard>(`/superadmin/dashboard${refresh ? '?refresh=1' : ''}`, {}, token),
+  platformNeedsAttention: (token: string) => request<{ items: AttentionItem[]; notTracked: string[] }>('/superadmin/needs-attention', {}, token),
+  platformSchoolUsers: (token: string, schoolId: string, query: { kind: 'staff' | 'parents'; search?: string; page?: number }) =>
+    request<Paged<PlatformSchoolUser>>(`/superadmin/schools/${schoolId}/users?${new URLSearchParams({ kind: query.kind, page: String(query.page ?? 1), ...(query.search ? { search: query.search } : {}) })}`, {}, token),
+  platformSchoolStudents: (token: string, schoolId: string, query: { search?: string; page?: number }) =>
+    request<Paged<PlatformSchoolStudent>>(`/superadmin/schools/${schoolId}/students?${new URLSearchParams({ page: String(query.page ?? 1), ...(query.search ? { search: query.search } : {}) })}`, {}, token),
+  platformSchoolOperations: (token: string, schoolId: string) => request<PlatformSchoolOperations>(`/superadmin/schools/${schoolId}/operations`, {}, token),
+  platformSchoolAttendance: (token: string, schoolId: string) =>
+    request<{ students: number; days: { date: string; present: number; absent: number; other: number }[] }>(`/superadmin/schools/${schoolId}/attendance`, {}, token),
+  platformSchoolSecurity: (token: string, schoolId: string) => request<PlatformSchoolSecurity>(`/superadmin/schools/${schoolId}/security`, {}, token),
+  platformSchoolNotifications: (token: string, schoolId: string) =>
+    request<{ emailConfigured: boolean; lastThirtyDays: Record<string, number> }>(`/superadmin/schools/${schoolId}/notifications`, {}, token),
+  operationsSchools: (token: string, query: { search?: string; page?: number } = {}) =>
+    request<Paged<OperationsSchoolRow> & { timezone: string }>(`/superadmin/operations/schools?${toQuery(query)}`, {}, token),
+  operationsRequests: (token: string, query: { state: 'waiting' | 'done'; type?: 'DROP_OFF' | 'PICK_UP'; schoolId?: string; page?: number }) =>
+    request<Paged<OperationsRequest> & { thresholds: { warn: number; alert: number } }>(`/superadmin/operations/requests?${toQuery(query)}`, {}, token),
+  operationsAttendance: (token: string, query: { date?: string; page?: number } = {}) =>
+    request<Paged<OperationsAttendanceRow> & { date: string; totals: { present: number; absent: number; late: number } }>(`/superadmin/operations/attendance?${toQuery(query)}`, {}, token),
+  operationsIncidents: (token: string, query: { from?: string; to?: string; type?: string; state?: 'open' | 'reviewed' | 'all'; schoolId?: string; page?: number } = {}) =>
+    request<Paged<Incident> & { from: string; to: string }>(`/superadmin/operations/incidents?${toQuery(query)}`, {}, token),
+  reviewIncident: (token: string, key: string, note: string) =>
+    request<void>('/superadmin/operations/incidents/review', { method: 'POST', body: JSON.stringify({ key, note }) }, token),
+  securityOverview: (token: string) => request<SecurityOverview>('/superadmin/security/overview', {}, token),
+  securitySessions: (token: string) => request<AdminSession[]>('/superadmin/security/sessions', {}, token),
+  endAdminSession: (token: string, sessionId: string, reason: string) =>
+    request<void>(`/superadmin/security/sessions/${sessionId}/end`, { method: 'POST', body: JSON.stringify({ reason }) }, token),
+  securityEvents: (token: string, query: { category: 'logins' | 'changes'; outcome?: string; search?: string; before?: SecurityEvent }) =>
+    request<{ entries: SecurityEvent[]; hasMore: boolean }>(`/superadmin/security/events?${toQuery({
+      category: query.category, outcome: query.outcome, search: query.search,
+      beforeCreatedAt: query.before?.createdAt, beforeId: query.before?.id,
+    })}`, {}, token),
+  complianceOverview: (token: string) => request<ComplianceOverview>('/superadmin/compliance/overview', {}, token),
+  dataRequests: (token: string, query: { status?: string; kind?: string; schoolId?: string; page?: number } = {}) =>
+    request<Paged<DataRequest>>(`/superadmin/compliance/data-requests?${toQuery(query)}`, {}, token),
+  dataRequest: (token: string, requestId: string) => request<DataRequest & { history: DataRequestEvent[] }>(`/superadmin/compliance/data-requests/${requestId}`, {}, token),
+  createDataRequest: (token: string, input: { schoolId: string; kind: 'EXPORT' | 'DELETION'; subjectType: 'STUDENT' | 'PARENT' | 'SCHOOL'; subjectId?: string; requesterName: string; requesterRelationship?: string; receivedVia?: string; details?: string }) =>
+    request<DataRequest>('/superadmin/compliance/data-requests', { method: 'POST', body: JSON.stringify(input) }, token),
+  setDataRequestStatus: (token: string, requestId: string, status: DataRequestStatus, note?: string) =>
+    request<DataRequest>(`/superadmin/compliance/data-requests/${requestId}/status`, { method: 'POST', body: JSON.stringify({ status, note }) }, token),
+  downloadDataRequestExport: (token: string, requestId: string) =>
+    downloadFile(`/superadmin/compliance/data-requests/${requestId}/export`, token, 'sdpmplus-export.json'),
+  runDataRequestDeletion: (token: string, requestId: string, confirmName: string) =>
+    request<DataRequest>(`/superadmin/compliance/data-requests/${requestId}/run-deletion`, { method: 'POST', body: JSON.stringify({ confirmName }) }, token),
+  setLegalHold: (token: string, schoolId: string, hold: boolean, reason: string) =>
+    request<void>(`/superadmin/compliance/schools/${schoolId}/legal-hold`, { method: 'POST', body: JSON.stringify({ hold, reason }) }, token),
+  // Notifications & announcements
+  notificationSummary: (token: string) => request<{ emailConfigured: boolean; counts: { status: string; day: number; week: number }[] }>('/superadmin/notifications/summary', {}, token),
+  notificationDeliveries: (token: string, query: { status?: string; template?: string; search?: string; page?: number } = {}) =>
+    request<Paged<EmailDelivery>>(`/superadmin/notifications/deliveries?${toQuery(query)}`, {}, token),
+  retryDelivery: (token: string, deliveryId: string) => request<{ sent: boolean }>(`/superadmin/notifications/deliveries/${deliveryId}/retry`, { method: 'POST' }, token),
+  announcements: (token: string) => request<Announcement[]>('/superadmin/announcements', {}, token),
+  sendAnnouncement: (token: string, input: { title: string; body: string; audience: 'SCHOOL_ADMINS' | 'ALL_STAFF'; schoolIds?: string[] }) =>
+    request<{ id: string; schoolCount: number }>('/superadmin/announcements', { method: 'POST', body: JSON.stringify(input) }, token),
+  // Reports & background jobs
+  reportTypes: (token: string) => request<ReportType[]>('/superadmin/reports', {}, token),
+  report: (token: string, type: string, query: { from?: string; to?: string; schoolId?: string; page?: number }) =>
+    request<ReportPage>(`/superadmin/reports/${type}?${toQuery(query)}`, {}, token),
+  exportReport: (token: string, type: string, input: { from?: string; to?: string; schoolId?: string }) =>
+    request<{ jobId: string }>(`/superadmin/reports/${type}/export`, { method: 'POST', body: JSON.stringify(input) }, token),
+  myJobs: (token: string) => request<BackgroundJob[]>('/superadmin/jobs', {}, token),
+  downloadJob: (token: string, jobId: string) => downloadFile(`/superadmin/jobs/${jobId}/download`, token, 'sdpmplus-report.csv'),
+  // Billing
+  billingSummary: (token: string) => request<BillingSummary>('/superadmin/billing/summary', {}, token),
+  billingPlans: (token: string) => request<BillingPlan[]>('/superadmin/billing/plans', {}, token),
+  createPlan: (token: string, input: { name: string; description?: string; pricingModel: 'FLAT' | 'PER_STUDENT'; priceCents: number; interval: 'MONTH' | 'YEAR' }) =>
+    request<{ id: string }>('/superadmin/billing/plans', { method: 'POST', body: JSON.stringify(input) }, token),
+  updatePlan: (token: string, planId: string, input: { name?: string; description?: string; priceCents?: number; active?: boolean }) =>
+    request<void>(`/superadmin/billing/plans/${planId}`, { method: 'PATCH', body: JSON.stringify(input) }, token),
+  subscriptions: (token: string, query: { status?: string; search?: string; page?: number } = {}) =>
+    request<Paged<SubscriptionRow>>(`/superadmin/billing/subscriptions?${toQuery(query)}`, {}, token),
+  setSubscription: (token: string, schoolId: string, input: { planId: string; status: string; startedOn?: string; currentPeriodEnd?: string; notes?: string }) =>
+    request<void>(`/superadmin/billing/schools/${schoolId}/subscription`, { method: 'PUT', body: JSON.stringify(input) }, token),
+  schoolBilling: (token: string, schoolId: string) => request<{ subscription: SchoolSubscription | null; invoices: Invoice[] }>(`/superadmin/billing/schools/${schoolId}`, {}, token),
+  invoices: (token: string, query: { status?: string; schoolId?: string; page?: number } = {}) =>
+    request<Paged<Invoice>>(`/superadmin/billing/invoices?${toQuery(query)}`, {}, token),
+  invoice: (token: string, invoiceId: string) => request<Invoice & { payments: Payment[] }>(`/superadmin/billing/invoices/${invoiceId}`, {}, token),
+  createInvoice: (token: string, input: { schoolId: string; description?: string; amountCents?: number; periodStart?: string; periodEnd?: string; dueOn?: string }) =>
+    request<{ id: string; number: string; amountCents: number }>('/superadmin/billing/invoices', { method: 'POST', body: JSON.stringify(input) }, token),
+  issueInvoice: (token: string, invoiceId: string) => request<void>(`/superadmin/billing/invoices/${invoiceId}/issue`, { method: 'POST' }, token),
+  voidInvoice: (token: string, invoiceId: string, reason: string) => request<void>(`/superadmin/billing/invoices/${invoiceId}/void`, { method: 'POST', body: JSON.stringify({ reason }) }, token),
+  recordPayment: (token: string, invoiceId: string, input: { amountCents: number; method: string; reference?: string; receivedOn?: string }) =>
+    request<{ fullyPaid: boolean }>(`/superadmin/billing/invoices/${invoiceId}/payments`, { method: 'POST', body: JSON.stringify(input) }, token),
+  systemHealth: (token: string) => request<SystemHealth>('/superadmin/system/health', {}, token),
+  checkEmailConnection: (token: string) => request<{ ok: boolean; message: string }>('/superadmin/system/email-check', { method: 'POST' }, token),
+  platformAuditActions: (token: string) => request<string[]>('/superadmin/audit-logs/actions', {}, token),
+  platformAdmins: (token: string) => request<PlatformAdminRow[]>('/superadmin/admins', {}, token),
+  platformAddAdmin: (token: string, input: { email: string; fullName?: string; role: PlatformRole }) =>
+    request<{ id: string } & InviteResult>('/superadmin/admins', { method: 'POST', body: JSON.stringify(input) }, token),
+  platformUpdateAdmin: (token: string, userId: string, input: { role?: PlatformRole; status?: 'ACTIVE' | 'DISABLED'; reason: string }) =>
+    request<void>(`/superadmin/admins/${userId}`, { method: 'PATCH', body: JSON.stringify(input) }, token),
+  startSupportSession: (token: string, input: { schoolId: string; reason: string; allowChanges: boolean }) =>
+    request<SupportSession>('/superadmin/support-sessions', { method: 'POST', body: JSON.stringify(input) }, token),
+  endSupportSession: (token: string) => request<void>('/superadmin/support-sessions/end', { method: 'POST' }, token),
   /** Staff inbox — shared by the admin dashboard's Notices tab and the teacher app's Notices tab. */
   staffNotices: (token: string) =>
     request<(Omit<Notice, 'read'> & { read: number })[]>('/staff/notices', {}, token)
       .then(rows => rows.map(row => ({ ...row, read: Boolean(row.read) }))),
 };
 
+export interface SupportSession { id: string; schoolId: string; schoolName: string; reason?: string; allowChanges: boolean; startedAt: number; expiresAt: number }
+export interface PlatformMe { role: PlatformRole; permissions: string[]; supportSession: SupportSession | null }
+export interface Paged<T> { items: T[]; total: number; page: number; pageSize: number }
+export type SchoolStatus = 'ACTIVE' | 'SUSPENDED' | 'ARCHIVED';
+export interface PlatformSchoolRow {
+  id: string; name: string; code: string; status: SchoolStatus; createdAt: string; suspendedAt: string | null; suspendedReason: string | null;
+  organizationName: string; students: number; staff: number; parents: number; locations: number;
+}
+export interface PlatformSchoolDetail {
+  id: string; name: string; code: string; status: SchoolStatus; timezone: string; createdAt: string;
+  suspendedAt: string | null; suspendedReason: string | null; archivedAt: string | null; organizationName: string;
+  counts: { students: number; staff: number; parents: number; locations: number };
+  locations: { id: string; name: string; address: string | null; status: string; mapped: boolean; geofenceRadius: number | null; startTime: string | null; dismissalTime: string | null; createdAt: string }[];
+  admins: { id: string; fullName: string; email: string; accountActive: boolean; status: string; mfaEnabled: boolean; needsSetup: boolean }[];
+  activeYear: { id: string; name: string } | null;
+  setup: { key: string; label: string; done: boolean }[];
+}
+export interface PlatformAuditEntry {
+  id: string; createdAt: string; schoolId: string | null; schoolName: string | null; actorId: string | null; actorName: string | null; actorRole: string | null;
+  action: string; targetType: string | null; targetId: string | null; targetLabel: string | null; details: Record<string, unknown> | null;
+  ipAddress: string | null; reason: string | null; requestId: string | null; supportSessionId: string | null;
+}
+const toQuery = (query: Record<string, string | number | undefined>) =>
+  new URLSearchParams(Object.entries(query).filter(([, v]) => v !== undefined && v !== '').map(([k, v]) => [k, String(v)])).toString();
+
+export interface OperationsSchoolRow {
+  id: string; name: string; dropOffs: number; pickUps: number; pendingDropOffs: number; pendingPickUps: number;
+  oldestPendingAt: string | null; oldestWaitMinutes: number | null; declined: number;
+}
+export interface OperationsRequest {
+  id: string; schoolId: string; schoolName: string; campusName: string | null; requestType: 'DROP_OFF' | 'PICK_UP'; status: string;
+  requestedAt: string; closedAt: string | null; studentName: string; teacherName: string | null; closedByName: string | null; waitMinutes: number | null;
+}
+export interface OperationsAttendanceRow { id: string; name: string; students: number; present: number; late: number; absent: number; other: number; unmarked: number }
+export interface Incident {
+  key: string; type: 'REQUEST_DECLINED'; schoolId: string; schoolName: string; occurredAt: string; actorName: string | null;
+  studentName: string | null; requestType: 'DROP_OFF' | 'PICK_UP'; reviewNote: string | null; reviewedAt: string | null; reviewedBy: string | null;
+}
+export interface MfaCoverage { platformAdmins: Coverage; schoolAdmins: Coverage; teachers: Coverage; parents: Coverage }
+interface Coverage { total: number; withMfa: number }
+export interface SecurityOverview {
+  failedDay: number; failedWeek: number; lockoutsDay: number; lockoutsWeek: number; mfaFailuresWeek: number; signInsDay: number;
+  adminSessions: number; mfa: MfaCoverage; mfaRequiredForAdmins: boolean;
+  suspicious: { targetedAccounts: { identifier: string | null; failures: number; addresses: number }[]; sprayingAddresses: { address: string; failures: number; accounts: number }[] };
+}
+export interface AdminSession {
+  id: string; userId: string; fullName: string; email: string; signedInAt: string; expiresAt: number; platformRole: string | null;
+  mfaEnabled: boolean; schools: string | null; inSupportSession: boolean; current: boolean;
+}
+export interface SecurityEvent {
+  id: string; createdAt: string; action: string; actorName: string | null; actorRole: string | null; targetLabel: string | null;
+  ipAddress: string | null; reason: string | null; schoolName: string | null; identifier: string | null;
+}
+export type DataRequestStatus = 'REQUESTED' | 'UNDER_REVIEW' | 'APPROVED' | 'PROCESSING' | 'COMPLETED' | 'REJECTED';
+export interface DataRequest {
+  id: string; schoolId: string; schoolName: string; kind: 'EXPORT' | 'DELETION'; subjectType: 'STUDENT' | 'PARENT' | 'SCHOOL'; subjectId: string | null;
+  subjectLabel: string; requesterName: string; requesterRelationship: string | null; receivedVia: string | null; details: string | null;
+  status: DataRequestStatus; statusNote: string | null; dueAt: string; createdAt: string; updatedAt: string; completedAt: string | null;
+  outcome: { erased?: Record<string, number>; kept?: string[] } | null; createdBy: string; createdById: string; approvedBy: string | null;
+  legalHold: string | null; overdue: boolean;
+}
+export interface DataRequestEvent { id: string; createdAt: string; action: string; actorName: string | null; actorRole: string | null; reason: string | null; details: Record<string, unknown> | null }
+export interface ComplianceOverview {
+  requests: { status: DataRequestStatus; kind: 'EXPORT' | 'DELETION'; n: number; overdue: number }[];
+  retention: { schoolsWithRetention: number; activeSchools: number; removedStudentsKept: number };
+  legalHolds: { id: string; name: string; reason: string; since: string; setBy: string | null }[];
+  controls: {
+    passwordHashing: string; mfaSecretsEncrypted: boolean; mfaRequiredForAdmins: boolean; httpsEnforced: boolean; databaseTls: boolean;
+    auditLogAppendOnly: boolean; auditEntriesLast30Days: number; tenantIsolation: string; emailConfigured: boolean;
+  };
+  mfa: MfaCoverage;
+}
+export interface EmailDelivery {
+  id: string; channel: string; template: string; recipient: string; subject: string; schoolName: string | null;
+  status: 'SENDING' | 'SENT' | 'FAILED' | 'SKIPPED' | 'RETRIED'; error: string | null; retryOf: string | null; createdAt: string;
+}
+export interface Announcement { id: string; title: string; body: string; audience: 'SCHOOL_ADMINS' | 'ALL_STAFF'; schoolCount: number; createdAt: string; sentBy: string }
+export interface ReportType { key: string; title: string; description: string; columns: { key: string; label: string }[] }
+export interface ReportPage { from: string; to: string; timezone: string; columns: { key: string; label: string }[]; rows: Record<string, string | number | null>[]; total: number; page: number; pageSize: number }
+export interface BackgroundJob {
+  id: string; type: string; params: { reportType?: string; query?: { from?: string; to?: string; schoolId?: string } }; status: 'QUEUED' | 'RUNNING' | 'SUCCEEDED' | 'FAILED';
+  error: string | null; resultName: string | null; resultSize: number | null; createdAt: string; finishedAt: string | null; createdBy: string | null;
+}
+export interface BillingPlan { id: string; name: string; description: string | null; pricingModel: 'FLAT' | 'PER_STUDENT'; priceCents: number; currency: string; interval: 'MONTH' | 'YEAR'; active: boolean; schools: number }
+export interface SubscriptionRow {
+  schoolId: string; schoolName: string; schoolStatus: string; id: string | null; status: 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'NONE';
+  planId: string | null; planName: string | null; pricingModel: string | null; priceCents: number | null; interval: string | null;
+  startedOn: string | null; currentPeriodEnd: string | null; notes: string | null; students: number;
+}
+export interface SchoolSubscription { status: string; startedOn: string; currentPeriodEnd: string | null; notes: string | null; planName: string; pricingModel: string; priceCents: number; interval: string }
+export interface Invoice {
+  id: string; number: string; schoolId: string; schoolName: string; description: string; amountCents: number; currency: string;
+  status: 'DRAFT' | 'OPEN' | 'PAID' | 'VOID'; periodStart: string | null; periodEnd: string | null; dueOn: string | null; issuedAt: string | null;
+  paidAt: string | null; voidReason: string | null; createdAt: string; paidCents: number; overdue: boolean;
+}
+export interface Payment { id: string; amountCents: number; method: string; reference: string | null; receivedOn: string; recordedBy: string | null }
+export interface BillingSummary {
+  openCents: number; openCount: number; overdueCents: number; overdueCount: number; receivedLast30DaysCents: number;
+  subscriptions: Record<string, number>; problems: { id: string; name: string; overdueInvoices: number; overdueCents: number; pastDue: boolean }[];
+}
+export type HealthStatus = 'ok' | 'degraded' | 'down' | 'not_configured' | 'not_offered' | 'unknown';
+export interface SystemHealth {
+  generatedAt: string;
+  status: HealthStatus;
+  api: { status: HealthStatus; version: string; commit: string | null; environment: string; startedAt: string; uptimeMinutes: number; nodeVersion: string; memoryMb: number; eventLoopDelayMs: number };
+  database: { status: HealthStatus; message?: string; latencyMs?: number; serverVersion?: string; sizeMb?: number; migrationsApplied?: number; migrationsExpected?: number;
+    connections?: { total: number; idle: number; waiting: number }; largestTables?: { name: string; sizeMb: number; approxRows: number }[] };
+  email: { status: HealthStatus; sent24h?: number; failed24h?: number; lastSentAt?: string | null };
+  sms: { status: HealthStatus };
+  push: { status: HealthStatus };
+  jobs: { status: HealthStatus; queued?: number; running?: number; failed24h?: number; succeeded24h?: number; oldestQueuedMinutes?: number | null; workerLastTickAt?: string | null; workerRunningHere?: boolean };
+  retention: { status: HealthStatus; lastRunAt: string | null; failures: number };
+  storage: { databaseMb?: number; exportFilesMb?: number; auditEntriesApprox?: number };
+  clients: { client: string; version: string; firstSeen: string; lastSeen: string }[];
+  warnings: { setting: string; severity: 'critical' | 'high' | 'medium'; message: string }[];
+}
+export interface PlatformDashboard {
+  timezone: string;
+  today: string;
+  totals: { totalSchools: number; activeSchools: number; suspendedSchools: number; students: number; parents: number; staff: number; activeUsers: number };
+  operations: { dropOffs: number; pickUps: number; pendingDropOffs: number; pendingPickUps: number; declined: number; present: number; absent: number; exceptions: number };
+  daily: { date: string; dropOffs: number; pickUps: number; present: number; absent: number; activeSchools: number; signedIn: number }[];
+  generatedAt: string;
+}
+export interface AttentionItem { id: string; severity: 'critical' | 'high' | 'medium' | 'low'; category: string; title: string; detail: string; link: string | null }
+export interface PlatformSchoolUser {
+  id: string; fullName: string; email: string; phone: string | null; role: string; status: string; accountActive: boolean;
+  mfaEnabled: boolean; needsSetup: boolean; lastSignIn: string | null;
+}
+export interface PlatformSchoolStudent { id: string; fullName: string; status: string; pickupStatus: string; gradeName: string | null; className: string | null }
+export interface PlatformSchoolOperations {
+  timezone: string;
+  today: { dropOffs: number; pickUps: number; pending: number; declined: number };
+  recent: { id: string; requestType: 'DROP_OFF' | 'PICK_UP'; status: string; requestedAt: string; approvedAt: string | null; studentName: string; campusName: string | null }[];
+}
+export interface PlatformSchoolSecurity {
+  mfa: { admins: number; adminsWithMfa: number; teachersWithMfa: number };
+  lastSevenDays: Record<string, number>;
+  supportSessions: { id: string; adminName: string; reason: string; allowChanges: boolean; startedAt: number; endedAt: number | null; expiresAt: number; endReason: string | null }[];
+}
+export interface PlatformAdminRow { id: string; fullName: string; email: string; role: PlatformRole; status: 'ACTIVE' | 'DISABLED'; createdAt: string; mfaEnabled: boolean; needsSetup: boolean }
 export interface AdminOverview { totalStudents: number; activeTeachers: number; presentToday: number; pendingRequests: number }
 /** Structured address parts as stored (null when only the legacy one-line `address` exists). */
 export interface StoredAddressParts {
@@ -231,10 +499,16 @@ export interface StoredAddressParts {
   postalCode?: string | null;
   country?: string | null;
 }
+export interface SchoolBranding {
+  id: string;
+  name: string;
+  logoUrl: string | null;
+}
 export interface SchoolProfile extends StoredAddressParts {
   id: string;
   name: string;
   code: string;
+  logoUrl?: string | null;
   address?: string;
   timezone: string;
   status: string;

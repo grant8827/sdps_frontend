@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { SchoolBadge } from '../../components/SchoolBadge';
 import { Screen } from '../../components/Screen';
 import { SummaryTile } from '../../components/SummaryTile';
 import { useAuth } from '../../context/AuthContext';
@@ -43,6 +44,7 @@ export function OverviewScreen() {
 
   return (
     <Screen title="Overview" subtitle="School-wide snapshot.">
+      <SchoolBadge />
       <div className="tile-grid">
         <SummaryTile label="Total Enrolled Students" value={overview?.totalStudents ?? 0} />
         <SummaryTile label="Active Teachers" value={overview?.activeTeachers ?? 0} />

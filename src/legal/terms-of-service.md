@@ -21,14 +21,14 @@ The Service helps schools manage student drop-off and pick-up, attendance and co
 
 ## 3. Drop-off and pick-up
 
-The Service supports, but does not replace, the school's own safety procedures. **School staff remain responsible for deciding whether to release a child.** That includes checking identity when the pickup code cannot be shown. The Service depends on devices, networks and location services we do not control, and may occasionally be unavailable. Schools should keep a fallback procedure.
+The Service supports, but does not replace, the school's own safety procedures. **School staff remain responsible for deciding whether to release a child.** That includes checking the identity of the adult collecting them. The Service depends on devices, networks and location services we do not control, and may occasionally be unavailable. Schools should keep a fallback procedure.
 
 ## 4. Acceptable use
 
 You agree not to:
 
 - access information you are not authorized to see, or try to get around security or access controls;
-- share your account, or someone else's pickup code;
+- share your account;
 - upload unlawful, harmful or misleading content, or use messages to harass anyone;
 - interfere with the Service, probe it for vulnerabilities without our written permission, or scrape it.
 

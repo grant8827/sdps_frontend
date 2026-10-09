@@ -1,6 +1,6 @@
 /**
  * The SDPMPlus logo (public/sdpmplus-logo.jpg — a web-sized copy of
- * public/SDPMPlus_School_Branding_Logo.png). It includes the product
+ * public/SDPMPlus_logo.png). It includes the product
  * name, so it replaces the old badge + text. Sized by height; the
  * width follows the logo's 3:1 shape.
  */

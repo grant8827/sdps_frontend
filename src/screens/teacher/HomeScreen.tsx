@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { SchoolBadge } from '../../components/SchoolBadge';
 import { Screen } from '../../components/Screen';
 import { QuickAction } from '../../components/QuickAction';
 import { SummaryTile } from '../../components/SummaryTile';
@@ -32,6 +33,7 @@ export function HomeScreen() {
 
   return (
     <Screen title={`${getTimeOfDayGreeting()}, ${user?.fullName ?? ''}`} subtitle={getFriendlyDate()}>
+      <SchoolBadge />
       <div className="tile-grid">
         <SummaryTile label="Pending Requests" value={pending.length} accentColor="var(--amber-text)" />
         <SummaryTile label="Present Today" value={presentCount} accentColor="#39A844" />

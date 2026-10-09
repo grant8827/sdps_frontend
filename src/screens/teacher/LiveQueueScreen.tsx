@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Screen } from '../../components/Screen';
 import { useAuth } from '../../context/AuthContext';
-import { QueueList, type QueueVerification } from '../../components/QueueList';
+import { QueueList } from '../../components/QueueList';
 import { api } from '../../services/api';
 import type { QueueItem } from '../../types';
 
@@ -32,11 +32,11 @@ export function LiveQueueScreen() {
     return () => { cancelled = true; clearInterval(interval); };
   }, [token]);
 
-  // Errors propagate to QueueList, which shows them on the card (e.g. a
-  // wrong pickup code); the queue is refreshed either way.
-  const approve = async (item: QueueItem, verification: QueueVerification) => {
+  // Errors propagate to QueueList, which shows them on the card; the
+  // queue is refreshed either way.
+  const approve = async (item: QueueItem) => {
     if (!token) return;
-    try { await api.approveQueueItem(token, item.id, verification); }
+    try { await api.approveQueueItem(token, item.id); }
     finally { api.teacherQueue(token).then(setQueue).catch(() => {}); }
   };
 

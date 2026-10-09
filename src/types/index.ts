@@ -17,7 +17,11 @@ export interface User {
    * 'district_admin' (one entry per school in their district).
    */
   memberships?: { schoolId: string; role: string; schoolName?: string; districtName?: string | null }[];
+  /** Set for platform administrators (people who run SDPMPlus itself). The API re-checks it on every call. */
+  platform?: { role: PlatformRole; permissions: string[] } | null;
 }
+
+export type PlatformRole = 'SUPER_ADMIN' | 'PLATFORM_ADMIN' | 'SUPPORT_ADMIN' | 'BILLING_ADMIN';
 
 /**
  * What sign-in returns when the password was right but a second step is
@@ -62,8 +66,6 @@ export interface Child {
   latitude?: number | null;
   longitude?: number | null;
   geofenceRadius?: number | null;
-  /** One-time code for this child's pending pickup — only sent to the adult who requested it. */
-  pickupCode?: string | null;
 }
 
 export interface Parent {
@@ -104,8 +106,6 @@ export interface QueueItem {
   teacherId: string;
   requestType: QueueRequestType;
   requestedAt: string; // ISO timestamp
-  /** True for a pickup that can only be accepted with the parent's one-time code (the code itself is never sent to staff). */
-  requiresCode?: boolean;
 }
 
 export interface Notice {

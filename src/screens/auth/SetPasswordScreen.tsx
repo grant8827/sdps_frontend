@@ -29,7 +29,8 @@ export function SetPasswordScreen() {
   useEffect(() => {
     if (!token) return;
     api.checkAccountLink(token)
-      .then(setInfo)
+      // A "Forgot PIN?" link opened on this page can't set a password.
+      .then(link => (link.purpose === 'PIN_RESET' ? setLinkError('This link is for your pickup PIN, not your password.') : setInfo({ ...link, purpose: link.purpose })))
       .catch(err => setLinkError(err instanceof Error ? err.message : 'This link could not be checked.'));
   }, [token]);
 

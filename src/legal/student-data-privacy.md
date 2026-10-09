@@ -20,7 +20,7 @@ This policy describes how **GGHighTech LLC** handles information about K–12 st
 - Name, date of birth (optional), student number (optional) and photo (optional).
 - Grade, class, classroom and teacher, for each school year.
 - Daily attendance status (present, absent, sick, suspended, holiday, late) and who recorded it.
-- Drop-off and pick-up history: who requested it, when, and who released the child. It also records how the adult was verified, either a one-time pickup code or an administrator's ID check with a written reason.
+- Drop-off and pick-up history: who requested it, when, and who released the child.
 - The adults authorized for the child, their relationship, and whether each may pick up.
 
 ## Who can see it
@@ -62,7 +62,7 @@ For security incidents, we follow the notification requirements of the Florida I
 ## Parent and guardian controls
 
 - A parent may ask the school to authorize another adult. That adult gets **no access** until a school administrator approves the request.
-- Every pickup needs a **one-time code** that only the requesting adult's phone shows. The teacher must enter it before releasing the child.
+- A pickup can only be requested by an adult the school has approved for that child, from the school's pickup area, using that adult's private pickup PIN. The child's teacher or a school administrator confirms each release, and every release is recorded.
 - Parents can ask the school to review, correct or delete their child's information.
 
 ## Retention and deletion

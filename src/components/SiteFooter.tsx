@@ -62,8 +62,8 @@ export function SiteFooter() {
         <FooterColumn title="Trust & Security" links={legalLinks('trust')} />
       </div>
       <div className="footer-bottom">
-        <p className="footer-copy">© {year} {COMPANY_NAME}. All rights reserved.</p>
-        <p className="footer-copy">School Drop-off &amp; Pick-up is a product of {COMPANY_NAME}.</p>
+        <p className="footer-copy">© {year} sdpmplus.com | All rights reserved.</p>
+        <p className="footer-copy">sdpmplus.com is a product of {COMPANY_NAME}.</p>
       </div>
     </footer>
   );

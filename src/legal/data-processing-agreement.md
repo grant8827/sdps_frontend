@@ -43,7 +43,7 @@ The Service collects only the categories described in the Provider's [Student Da
 - role-based access;
 - school data isolation;
 - two-step verification for administrators;
-- one-time pickup verification codes; and
+- location checks on drop-off and pick-up requests; and
 - an append-only audit log available to the School.
 
 5.2 Provider personnel with access to Personal Information are bound by confidentiality obligations and receive access only as needed. [CONFIRM background checks / training if required by the School.]

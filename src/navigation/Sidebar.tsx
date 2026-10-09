@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import { NavLink } from 'react-router-dom';
 
 export interface TabDef {
@@ -5,6 +6,8 @@ export interface TabDef {
   label: string;
   end?: boolean;
   badge?: number;
+  /** Optional group heading; shown above the first tab of each group. */
+  section?: string;
 }
 
 /**
@@ -18,9 +21,10 @@ export interface TabDef {
 export function Sidebar({ tabs, open = true, onNavigate }: { tabs: TabDef[]; open?: boolean; onNavigate?: () => void }) {
   return (
     <nav className={`sidebar${open ? ' sidebar-open' : ''}`}>
-      {tabs.map(tab => (
+      {tabs.map((tab, index) => (
+        <Fragment key={tab.to}>
+        {tab.section && tab.section !== tabs[index - 1]?.section && <p className="sidebar-section">{tab.section}</p>}
         <NavLink
-          key={tab.to}
           to={tab.to}
           end={tab.end}
           className={({ isActive }) => `sidebar-item${isActive ? ' active' : ''}`}
@@ -29,6 +33,7 @@ export function Sidebar({ tabs, open = true, onNavigate }: { tabs: TabDef[]; ope
           <span>{tab.label}</span>
           {!!tab.badge && <span className="sidebar-badge">{tab.badge}</span>}
         </NavLink>
+        </Fragment>
       ))}
     </nav>
   );
