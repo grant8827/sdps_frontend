@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { AuthShell } from '../../components/AuthShell';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
+import { PasswordInput } from '../../components/PasswordInput';
 
 type LinkInfo = { purpose: 'INVITE' | 'RESET'; fullName: string; email: string };
 
@@ -83,10 +84,10 @@ export function SetPasswordScreen() {
             {/* Lets password managers save the new password against the right account. */}
             <input type="email" value={info.email} autoComplete="username" readOnly hidden />
             <div className="field-group">
-              <input className="input" placeholder="New password (at least 8 characters)" type="password" autoComplete="new-password" value={password} onChange={e => setPassword(e.target.value)} />
+              <PasswordInput placeholder="New password (at least 8 characters)" autoComplete="new-password" value={password} onChange={e => setPassword(e.target.value)} />
             </div>
             <div className="field-group">
-              <input className="input" placeholder="Type it again" type="password" autoComplete="new-password" value={confirm} onChange={e => setConfirm(e.target.value)} />
+              <PasswordInput placeholder="Type it again" autoComplete="new-password" value={confirm} onChange={e => setConfirm(e.target.value)} />
             </div>
             {error ? <p className="form-error">{error}</p> : null}
             <button type="submit" className="btn btn-primary btn-block" disabled={busy}>

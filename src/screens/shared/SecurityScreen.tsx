@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { MfaEnroll } from '../../components/MfaEnroll';
 import { PickupPinCard } from '../../components/PickupPinCard';
 import { RecoveryCodes } from '../../components/RecoveryCodes';
+import { PasswordInput } from '../../components/PasswordInput';
 import { Screen } from '../../components/Screen';
 import { useAuth } from '../../context/AuthContext';
 import { api, type MfaStatus } from '../../services/api';
@@ -91,7 +92,7 @@ export function SecurityScreen() {
           {mode === 'disabling' && (
             <>
               <p className="field-label" style={{ margin: 0 }}>Enter your password to turn off two-step verification:</p>
-              <input className="input" type="password" value={input} onChange={e => setInput(e.target.value)} placeholder="Password" />
+              <PasswordInput value={input} onChange={e => setInput(e.target.value)} placeholder="Password" autoComplete="current-password" />
               <div className="btn-row">
                 <button type="button" className="btn btn-danger" disabled={!input} onClick={disable}>Turn off</button>
                 <button type="button" className="btn btn-secondary" onClick={reset}>Cancel</button>

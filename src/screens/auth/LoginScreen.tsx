@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { AuthShell } from '../../components/AuthShell';
 import { MfaSignInStep } from '../../components/MfaSignInStep';
+import { PasswordInput } from '../../components/PasswordInput';
 import type { MfaChallenge } from '../../types';
 
 /**
@@ -67,10 +68,9 @@ export function LoginScreen() {
           />
         </div>
         <div className="field-group">
-          <input
-            className="input"
+          <PasswordInput
             placeholder="Password"
-            type="password"
+            autoComplete="current-password"
             value={password}
             onChange={e => setPassword(e.target.value)}
           />

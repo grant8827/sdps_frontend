@@ -5,6 +5,7 @@ import { AuthShell } from '../../components/AuthShell';
 import { MfaSignInStep } from '../../components/MfaSignInStep';
 import { api, ApiError } from '../../services/api';
 import { LogoPicker } from '../../components/LogoPicker';
+import { PasswordInput } from '../../components/PasswordInput';
 import { isMfaChallenge, type MfaChallenge } from '../../types';
 
 const emptyForm = {
@@ -200,8 +201,8 @@ export function RegisterSchoolScreen() {
           <input className="input" placeholder="Email" type="email" autoCapitalize="none" value={form.email} onChange={e => set('email', e.target.value)} />
         </div>
         <div className="btn-row" style={{ marginBottom: 4 }}>
-          <input className="input" placeholder="Password" type="password" value={form.password} onChange={e => set('password', e.target.value)} />
-          <input className="input" placeholder="Confirm password" type="password" value={form.confirmPassword} onChange={e => set('confirmPassword', e.target.value)} />
+          <PasswordInput placeholder="Password" autoComplete="new-password" value={form.password} onChange={e => set('password', e.target.value)} />
+          <PasswordInput placeholder="Confirm password" autoComplete="new-password" value={form.confirmPassword} onChange={e => set('confirmPassword', e.target.value)} />
         </div>
         <p className="field-hint" style={{ marginBottom: 12 }}>At least 8 characters.</p>
 
