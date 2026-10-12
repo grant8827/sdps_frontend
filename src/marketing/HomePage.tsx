@@ -6,6 +6,7 @@ import {
   ShieldCheckIcon, UsersCheckIcon,
 } from './icons';
 import { PublicNavbar } from './PublicNavbar';
+import { PricingSection } from './PricingSection';
 
 // Brand roles for the colored icon tiles: blue = action, green = done /
 // safe, amber = waiting / attention, navy = trust.
@@ -202,7 +203,9 @@ export function HomePage() {
         </div>
       </section>
 
-      <section id="roles" className="home-section home-section-soft">
+      <PricingSection />
+
+      <section id="roles" className="home-section">
         <div className="home-section-header">
           <span className="home-eyebrow">Who it&apos;s for</span>
           <h2 className="section-title">One sign-in, the right view for every role</h2>

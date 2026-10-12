@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Screen } from '../../components/Screen';
 import { useAuth } from '../../context/AuthContext';
 import { api, type BillingInterval, type SchoolPlanOption, type SchoolSubscriptionView } from '../../services/api';
@@ -32,6 +33,7 @@ export function SubscriptionScreen() {
   const [interval, setBillingInterval] = useState<BillingInterval>('MONTH');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
+  const [params, setParams] = useSearchParams();
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -43,20 +45,66 @@ export function SubscriptionScreen() {
   }, [token]);
   useEffect(() => { load(); }, [load]);
 
+  // Back from Stripe's payment page. Stripe tells our server about the
+  // payment a moment later, so the page is refreshed a few times.
+  useEffect(() => {
+    const outcome = params.get('checkout');
+    if (!outcome) return;
+    setParams({}, { replace: true });
+    if (outcome !== 'success') { setMessage('Payment was not completed, so nothing has changed.'); return; }
+    setMessage('Thank you. Your payment is being confirmed; this page will update in a moment.');
+    const timers = [2000, 5000, 10000].map(delay => setTimeout(load, delay));
+    return () => timers.forEach(clearTimeout);
+    // Only when the page first opens with ?checkout=…
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const run = async (action: () => Promise<string>) => {
     setBusy(true);
     setMessage('');
     try { setMessage(await action()); await load(); } catch (err) { setMessage(err instanceof Error ? err.message : 'Something went wrong'); } finally { setBusy(false); }
   };
 
+  // With card payment on: pay on Stripe's page, or (already paying by
+  // card) switch plan straight away. Otherwise, and for custom-priced
+  // plans, it is a request our team confirms.
+  const payByCard = (plan: SchoolPlanOption) => {
+    if (!token || !data) return;
+    const price = planPriceLabel(plan, interval, plan.currency);
+    const question = data.paidOnline
+      ? `Move your school to ${plan.name} (${limitLabel(plan.studentLimit).toLowerCase()}) at ${price}?\n\nThe change is immediate. The difference for the rest of this billing period is added to, or taken off, your next bill.`
+      : `Subscribe your school to ${plan.name} (${limitLabel(plan.studentLimit).toLowerCase()}) at ${price}?\n\nYou'll enter your card on our payment provider's secure page.${data.subscription?.status === 'TRIALING' && !data.subscription.trialEnded ? ` Your free trial continues until ${data.subscription.trialEndsOn}; the first charge is on that day.` : ''}`;
+    if (!window.confirm(question)) return;
+    run(async () => {
+      const result = await api.subscriptionCheckout(token, { planId: plan.id, interval, confirm: true });
+      if (result.url) { window.location.assign(result.url); return 'Taking you to the payment page…'; }
+      return `Your school is now on ${plan.name}.`;
+    });
+  };
+  const cancelCard = () => {
+    if (!token) return;
+    if (!window.confirm("Cancel your school's subscription?\n\nIt stays active until the end of the period you have paid for, and you can undo this before then.")) return;
+    run(async () => { await api.cancelPaidSubscription(token, { confirm: true }); return 'Your subscription will end at the end of the paid period.'; });
+  };
+  const undoCancel = () => {
+    if (!token) return;
+    run(async () => { await api.cancelPaidSubscription(token, { resume: true }); return 'Your subscription will continue.'; });
+  };
+  const openPortal = () => {
+    if (!token) return;
+    run(async () => { window.location.assign((await api.billingPortal(token)).url); return 'Opening your card and receipts…'; });
+  };
+
   const choose = (plan: SchoolPlanOption) => {
     if (!token) return;
+    if (data?.onlinePayment && !plan.customPricing) { payByCard(plan); return; }
     const price = plan.customPricing ? 'a price we will agree with you' : planPriceLabel(plan, interval, plan.currency);
     if (!window.confirm(`Ask to move your school to ${plan.name} (${limitLabel(plan.studentLimit).toLowerCase()}) at ${price}?\n\nThis changes what your school is billed. Nothing changes until our team confirms it.`)) return;
     run(async () => { await api.requestSubscriptionChange(token, { type: 'CHANGE_PLAN', planId: plan.id, interval, confirm: true }); return `We received your request for ${plan.name}. We'll confirm it shortly.`; });
   };
   const cancel = () => {
     if (!token) return;
+    if (data?.paidOnline) { cancelCard(); return; }
     if (!window.confirm("Ask to cancel your school's subscription?\n\nIt stays active until the end of the period you have paid for. Nothing changes until our team confirms it.")) return;
     run(async () => { await api.requestSubscriptionChange(token, { type: 'CANCEL', confirm: true }); return "We received your cancellation request. We'll confirm it shortly."; });
   };
@@ -86,10 +134,20 @@ export function SubscriptionScreen() {
               {sub.status === 'TRIALING'
                 ? sub.trialEnded
                   ? 'Your free trial has ended. Choose a plan below to continue.'
-                  : `Free trial with every feature: ${sub.trialDaysLeft} ${sub.trialDaysLeft === 1 ? 'day' : 'days'} left (ends ${sub.trialEndsOn}). No card needed.`
+                  : data.paidOnline
+                    ? `Free trial until ${sub.trialEndsOn} (${sub.trialDaysLeft} ${sub.trialDaysLeft === 1 ? 'day' : 'days'} left). Then ${priceLabel(sub.priceCents, sub.interval, sub.currency)}, charged to your card.`
+                    : `Free trial with every feature: ${sub.trialDaysLeft} ${sub.trialDaysLeft === 1 ? 'day' : 'days'} left (ends ${sub.trialEndsOn}). No card needed.`
                 : <>{priceLabel(sub.priceCents, sub.interval, sub.currency)}{sub.currentPeriodEnd && ` · ${sub.cancelAtPeriodEnd || sub.status === 'CANCELED' ? 'ends' : 'renews'} ${sub.currentPeriodEnd}`}</>}
             </div>
-            {sub.cancelAtPeriodEnd && <div className="field-label" style={{ margin: 0 }}>Your subscription is set to end on {sub.currentPeriodEnd}.</div>}
+            {sub.cancelAtPeriodEnd && (
+              <div className="field-label" style={{ margin: 0 }}>
+                Your subscription is set to end on {sub.currentPeriodEnd}.{' '}
+                {data.paidOnline && <button type="button" className="link-button" disabled={busy} onClick={undoCancel}>Keep my subscription</button>}
+              </div>
+            )}
+            {sub.status === 'PAST_DUE' && <div style={{ fontSize: 14, borderLeft: '4px solid var(--red)', paddingLeft: 10 }}>A payment didn't go through. Drop-off, pickup and attendance keep working. {data.paidOnline ? 'Please update the card on file.' : 'Please contact us to settle the invoice.'}</div>}
+            {data.lapsed && <div style={{ fontSize: 14, borderLeft: '4px solid var(--red)', paddingLeft: 10 }}>New students can't be added until your school is on a plan. Everything else, including drop-off, pickup and attendance, keeps working.</div>}
+            {data.paidOnline && <div><button type="button" className="btn btn-secondary btn-sm" disabled={busy} onClick={openPortal}>Card on file and receipts</button></div>}
           </>
         ) : (
           <div style={{ fontSize: 14 }}>Your school isn't on a plan yet, so there is no student limit. Choose one below when you're ready.</div>
@@ -142,18 +200,20 @@ export function SubscriptionScreen() {
               <div style={{ fontSize: 20, fontWeight: 700 }}>{planPriceLabel(plan, interval, plan.currency)}</div>
               <div style={{ fontSize: 14 }}>{limitLabel(plan.studentLimit)}</div>
               <div className="field-label" style={{ margin: 0 }}>{plan.customPricing ? "We'll agree a price with you." : 'Every feature included.'}</div>
-              <button type="button" className="btn btn-secondary btn-sm" style={{ marginTop: 'auto' }} disabled={busy || plan.tooSmall || sameChoice(plan) || Boolean(data.openRequest)} onClick={() => choose(plan)}>
-                {plan.tooSmall ? `Too small for ${data.activeStudents} students` : sameChoice(plan) ? 'Current plan' : plan.current && sub?.status !== 'TRIALING' ? `Switch to ${interval === 'YEAR' ? 'annual' : 'monthly'}` : plan.customPricing ? 'Ask about this plan' : 'Choose this plan'}
+              <button type="button" className="btn btn-secondary btn-sm" style={{ marginTop: 'auto' }} disabled={busy || plan.tooSmall || sameChoice(plan) || (Boolean(data.openRequest) && (!data.onlinePayment || plan.customPricing))} onClick={() => choose(plan)}>
+                {plan.tooSmall ? `Too small for ${data.activeStudents} students` : sameChoice(plan) ? 'Current plan' : plan.current && sub?.status !== 'TRIALING' && sub?.status !== 'CANCELED' ? `Switch to ${interval === 'YEAR' ? 'annual' : 'monthly'}` : plan.customPricing ? 'Ask about this plan' : data.paidOnline ? 'Switch to this plan' : data.onlinePayment ? 'Pay by card' : 'Choose this plan'}
               </button>
             </div>
           ))}
         </div>
         <p className="field-label" style={{ margin: 0 }}>
-          Choosing a plan sends a request; our team confirms it before anything is billed. Online card payment is coming soon.
+          {data.onlinePayment
+            ? "Card payments are taken on our payment provider's secure page; we never see or store your card number. Custom-priced plans are arranged with our team."
+            : 'Choosing a plan sends a request; our team confirms it before anything is billed.'}
           {data.openRequest && ' You have a request waiting, so another can\'t be made until it is answered or withdrawn.'}
         </p>
         {sub && sub.status !== 'CANCELED' && !sub.cancelAtPeriodEnd && (
-          <div><button type="button" className="link-button" disabled={busy || Boolean(data.openRequest)} onClick={cancel}>Cancel subscription</button></div>
+          <div><button type="button" className="link-button" disabled={busy || (Boolean(data.openRequest) && !data.paidOnline)} onClick={cancel}>Cancel subscription</button></div>
         )}
       </section>
 
@@ -166,7 +226,7 @@ export function SubscriptionScreen() {
               <tbody>
                 {data.invoices.map(invoice => (
                   <tr key={invoice.id}>
-                    <td>{invoice.number}<div className="field-label" style={{ margin: 0 }}>{invoice.description}</div></td>
+                    <td>{invoice.hostedUrl ? <a href={invoice.hostedUrl} target="_blank" rel="noopener noreferrer">{invoice.number}</a> : invoice.number}<div className="field-label" style={{ margin: 0 }}>{invoice.description}</div></td>
                     <td>{formatMoney(invoice.amountCents, invoice.currency)}</td>
                     <td>{formatMoney(invoice.paidCents, invoice.currency)}{invoice.paidAt && <div className="field-label" style={{ margin: 0 }}>{formatUtcTimestamp(invoice.paidAt)}</div>}</td>
                     <td>{invoice.dueOn ?? '—'}</td>

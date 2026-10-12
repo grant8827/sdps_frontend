@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { SchoolBadge } from '../../components/SchoolBadge';
+import { useSearchParams } from 'react-router-dom';
 import { Screen } from '../../components/Screen';
 import { SummaryTile } from '../../components/SummaryTile';
 import { useAuth } from '../../context/AuthContext';
@@ -42,9 +43,15 @@ export function OverviewScreen() {
     if (token) api.markNoticeRead(token, noticeId).catch(() => {});
   };
 
+  // Arriving from the payment page at the end of sign-up.
+  const [params, setParams] = useSearchParams();
+  const [paid] = useState(() => params.get('checkout') === 'success');
+  useEffect(() => { if (params.has('checkout')) setParams({}, { replace: true }); }, [params, setParams]);
+
   return (
     <Screen title="Overview" subtitle="School-wide snapshot.">
       <SchoolBadge />
+      {paid && <div className="card" role="status">Thank you. Your payment is being confirmed, and your plan will show under Subscription in a moment.</div>}
       <div className="tile-grid">
         <SummaryTile label="Total Enrolled Students" value={overview?.totalStudents ?? 0} />
         <SummaryTile label="Active Teachers" value={overview?.activeTeachers ?? 0} />

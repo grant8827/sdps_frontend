@@ -35,6 +35,8 @@ import { AuditLogScreen } from './screens/admin/AuditLogScreen';
 import { SecurityScreen } from './screens/shared/SecurityScreen';
 import { DataPrivacyScreen } from './screens/admin/DataPrivacyScreen';
 import { SubscriptionScreen } from './screens/admin/SubscriptionScreen';
+import { ChoosePlanScreen } from './screens/admin/ChoosePlanScreen';
+import { justRegistered } from './utils/onboarding';
 import { DistrictOverviewScreen } from './screens/admin/DistrictOverviewScreen';
 import { LegalPage } from './legal/LegalPage';
 
@@ -105,7 +107,8 @@ function AppRoutes() {
     <Routes>
       <Route path="/" element={<Navigate to={homePath} replace />} />
       <Route path="/login" element={<Navigate to={homePath} replace />} />
-      <Route path="/register" element={<Navigate to={homePath} replace />} />
+      {/* Straight after registering, a new school chooses its plan (free trial or pay) before the dashboard. */}
+      <Route path="/register" element={<Navigate to={user.role === 'admin' && justRegistered() ? '/admin/choose-plan' : homePath} replace />} />
       <Route path="/forgot-password" element={<Navigate to={homePath} replace />} />
       <Route path="/set-password" element={<SetPasswordScreen />} />
       <Route path="/set-pin" element={<SetPinScreen />} />
@@ -173,6 +176,7 @@ function AppRoutes() {
           <Route path="audit-log" element={<AuditLogScreen />} />
           <Route path="data" element={<DataPrivacyScreen />} />
           <Route path="subscription" element={<SubscriptionScreen />} />
+          <Route path="choose-plan" element={<ChoosePlanScreen />} />
           <Route path="district" element={<DistrictOverviewScreen />} />
           <Route path="security" element={<SecurityScreen />} />
         </Route>

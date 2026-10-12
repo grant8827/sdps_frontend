@@ -208,11 +208,11 @@ export function SubscriptionsScreen() {
                 {data.items.map(row => (
                   <tr key={row.schoolId}>
                     <td><Link to={`/platform/schools/${row.schoolId}`}>{row.schoolName}</Link></td>
-                    <td>{row.planName ?? '—'}{row.planName && <div className="field-label" style={{ margin: 0 }}>{priceLabel(row.priceCents, row.interval)}{row.agreedPrice ? ' (agreed)' : ''}</div>}</td>
+                    <td>{row.planName ?? '—'}{row.planName && <div className="field-label" style={{ margin: 0 }}>{priceLabel(row.priceCents, row.interval)}{row.paidOnline ? ' · by card' : row.agreedPrice ? ' (agreed)' : ''}</div>}</td>
                     <td><SubscriptionBadge status={row.status} />{row.cancelAtPeriodEnd && <div className="field-label" style={{ margin: 0 }}>Cancels at period end</div>}</td>
                     <td>{row.status === 'TRIALING' ? (row.trialEndsOn ? `Trial ends ${row.trialEndsOn}` : '—') : row.currentPeriodEnd ?? '—'}</td>
                     <td>{row.students.toLocaleString('en-US')}{row.studentLimit !== null && ` of ${row.studentLimit.toLocaleString('en-US')}`}</td>
-                    <td>{canEdit && <button type="button" className="btn btn-secondary btn-sm" onClick={() => edit(row)}>{row.status === 'NONE' ? 'Set plan' : 'Change'}</button>}</td>
+                    <td>{row.paidOnline ? <span className="field-label" style={{ margin: 0 }}>Managed in Stripe</span> : canEdit && <button type="button" className="btn btn-secondary btn-sm" onClick={() => edit(row)}>{row.status === 'NONE' ? 'Set plan' : 'Change'}</button>}</td>
                   </tr>
                 ))}
                 {data.items.length === 0 && <tr><td colSpan={6} className="empty-text">No schools match.</td></tr>}

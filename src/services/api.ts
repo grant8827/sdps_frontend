@@ -332,6 +332,17 @@ export const api = {
   mySubscription: (token: string) => request<SchoolSubscriptionView>('/admin/subscription', {}, token),
   requestSubscriptionChange: (token: string, input: { type: 'CHANGE_PLAN' | 'CANCEL'; planId?: string; interval?: BillingInterval; note?: string; confirm: true }) =>
     request<{ id: string }>('/admin/subscription/requests', { method: 'POST', body: JSON.stringify(input) }, token),
+  /** Pay by card (answers a Stripe page to go to), or, when already paying by card, change plan there and then. */
+  /** The public price list (no sign-in). */
+  publicPlans: () => request<{ plans: PublicPlan[]; trialDays: number }>('/plans'),
+  /** Puts the school's running free trial on the chosen plan (sign-up flow). */
+  chooseTrialPlan: (token: string, planId: string, interval: BillingInterval) =>
+    request<void>('/admin/subscription/trial', { method: 'POST', body: JSON.stringify({ planId, interval }) }, token),
+  subscriptionCheckout: (token: string, input: { planId: string; interval: BillingInterval; confirm: true; startNow?: boolean; returnTo?: 'dashboard' }) =>
+    request<{ url?: string; changed?: boolean }>('/admin/subscription/checkout', { method: 'POST', body: JSON.stringify(input) }, token),
+  cancelPaidSubscription: (token: string, input: { confirm: true } | { resume: true }) =>
+    request<void>('/admin/subscription/cancel', { method: 'POST', body: JSON.stringify(input) }, token),
+  billingPortal: (token: string) => request<{ url: string }>('/admin/subscription/portal', { method: 'POST' }, token),
   withdrawSubscriptionRequest: (token: string, requestId: string) => request<void>(`/admin/subscription/requests/${requestId}`, { method: 'DELETE' }, token),
   subscriptions: (token: string, query: { status?: string; search?: string; planId?: string; renewsBefore?: string; page?: number } = {}) =>
     request<Paged<SubscriptionRow>>(`/superadmin/billing/subscriptions?${toQuery(query)}`, {}, token),
@@ -464,6 +475,7 @@ export interface SubscriptionRequest {
 export interface PlatformSubscriptionRequest extends SubscriptionRequest {
   schoolId: string; schoolName: string; priceCents: number | null; customPricing: boolean | null; currentPlanName: string | null; currentStatus: string | null; currentPeriodEnd: string | null; students: number;
 }
+export interface PublicPlan extends PlanTerms { id: string; name: string; description: string | null; currency: string }
 export interface SchoolPlanOption extends PlanTerms { id: string; name: string; description: string | null; currency: string; current: boolean; recommended: boolean; tooSmall: boolean }
 export interface SchoolSubscriptionView {
   subscription: {
@@ -472,13 +484,17 @@ export interface SchoolSubscriptionView {
     trialEndsOn: string | null; trialDaysLeft: number | null; trialEnded: boolean; cancelAtPeriodEnd: boolean;
   } | null;
   activeStudents: number; studentLimit: number | null; remaining: number | null; percentUsed: number | null; level: CapacityLevel;
+  /** Why students can't be added right now, if the subscription has lapsed. */
+  lapsed: 'CANCELED' | 'TRIAL_ENDED' | 'PAYMENT_OVERDUE' | null;
+  /** onlinePayment: card payment is offered. paidOnline: this school already pays by card. */
+  onlinePayment: boolean; paidOnline: boolean;
   plans: SchoolPlanOption[]; graceDays: number; openRequest: SubscriptionRequest | null; requests: SubscriptionRequest[];
-  invoices: Omit<Invoice, 'schoolId' | 'schoolName' | 'voidReason' | 'createdAt'>[]; enrollmentHistory: EnrollmentEntry[];
+  invoices: (Omit<Invoice, 'schoolId' | 'schoolName' | 'voidReason' | 'createdAt'> & { hostedUrl: string | null; pdfUrl: string | null })[]; enrollmentHistory: EnrollmentEntry[];
 }
 export interface SubscriptionRow {
   schoolId: string; schoolName: string; schoolStatus: string; id: string | null; status: 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'NONE';
   planId: string | null; planName: string | null; studentLimit: number | null; customPricing: boolean | null; priceCents: number | null; interval: BillingInterval;
-  agreedPrice: boolean; trialEndsOn: string | null; cancelAtPeriodEnd: boolean | null;
+  agreedPrice: boolean; paidOnline: boolean | null; trialEndsOn: string | null; cancelAtPeriodEnd: boolean | null;
   startedOn: string | null; currentPeriodEnd: string | null; notes: string | null; students: number;
 }
 export interface SchoolSubscription { status: string; startedOn: string; currentPeriodEnd: string | null; notes: string | null; planName: string; pricingModel: string; priceCents: number | null; interval: string; studentLimit: number | null; trialEndsOn: string | null; cancelAtPeriodEnd: boolean }

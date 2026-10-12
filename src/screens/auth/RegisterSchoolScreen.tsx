@@ -5,6 +5,7 @@ import { AuthShell } from '../../components/AuthShell';
 import { MfaSignInStep } from '../../components/MfaSignInStep';
 import { api, ApiError } from '../../services/api';
 import { LogoPicker } from '../../components/LogoPicker';
+import { markJustRegistered } from '../../utils/onboarding';
 import { PasswordInput } from '../../components/PasswordInput';
 import { isMfaChallenge, type MfaChallenge } from '../../types';
 
@@ -85,6 +86,8 @@ export function RegisterSchoolScreen() {
       logoDataUrl: form.logoDataUrl || undefined,
       emailCode: code,
     });
+    // Next stop after signing in: choosing a plan (see App.tsx's /register route).
+    markJustRegistered();
     if (isMfaChallenge(result)) setChallenge(result);
     else await adoptSession(result);
   };

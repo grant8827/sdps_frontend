@@ -6,7 +6,7 @@ const NAV_LINKS = [
   { href: '/#features', label: 'Features' },
   { href: '/#how-it-works', label: 'How it works' },
   { href: '/#safety', label: 'Safety' },
-  { href: '/#roles', label: 'Who it\'s for' },
+  { href: '/#pricing', label: 'Pricing' },
 ];
 
 /**
