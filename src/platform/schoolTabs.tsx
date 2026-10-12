@@ -12,6 +12,7 @@ import { formatUtcTimestamp } from '../utils/utcTime';
 import { formatMoney } from '../utils/money';
 import { Link } from 'react-router-dom';
 import { InvoiceBadge } from './billing/InvoicesScreen';
+import { priceLabel } from '../utils/plans';
 import { SUBSCRIPTION_LABEL } from './billing/SubscriptionsScreen';
 
 // The fuller tabs of Platform → School. Each loads only when opened, and
@@ -270,8 +271,11 @@ export function SubscriptionTab({ schoolId }: { schoolId: string }) {
       <div className="card" style={{ display: 'grid', gap: 6, fontSize: 14 }}>
         {sub ? (
           <>
-            <div><strong>{sub.planName}</strong> · {formatMoney(sub.priceCents)}{sub.pricingModel === 'PER_STUDENT' ? ' per student' : ''} / {sub.interval === 'YEAR' ? 'year' : 'month'}</div>
-            <div>Status: {SUBSCRIPTION_LABEL[sub.status as keyof typeof SUBSCRIPTION_LABEL] ?? sub.status} · since {sub.startedOn}{sub.currentPeriodEnd && ` · current period ends ${sub.currentPeriodEnd}`}</div>
+            <div><strong>{sub.planName}</strong> · {priceLabel(sub.priceCents, sub.interval)}</div>
+            <div>{data.activeStudents.toLocaleString('en-US')} active students{data.studentLimit !== null && ` of ${data.studentLimit.toLocaleString('en-US')} on this plan`}</div>
+            <div>Status: {SUBSCRIPTION_LABEL[sub.status as keyof typeof SUBSCRIPTION_LABEL] ?? sub.status} · since {sub.startedOn}
+              {sub.status === 'TRIALING' && sub.trialEndsOn ? ` · trial ends ${sub.trialEndsOn}` : sub.currentPeriodEnd ? ` · current period ends ${sub.currentPeriodEnd}` : ''}
+              {sub.cancelAtPeriodEnd && ' · cancels at period end'}</div>
             {sub.notes && <div className="field-label" style={{ margin: 0 }}>{sub.notes}</div>}
           </>
         ) : <div>No plan set. <Link to="/platform/billing/subscriptions">Set one in School Subscriptions</Link>.</div>}

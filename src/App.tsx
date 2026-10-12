@@ -34,6 +34,7 @@ import { SchoolSetupScreen } from './screens/admin/SchoolSetupScreen';
 import { AuditLogScreen } from './screens/admin/AuditLogScreen';
 import { SecurityScreen } from './screens/shared/SecurityScreen';
 import { DataPrivacyScreen } from './screens/admin/DataPrivacyScreen';
+import { SubscriptionScreen } from './screens/admin/SubscriptionScreen';
 import { DistrictOverviewScreen } from './screens/admin/DistrictOverviewScreen';
 import { LegalPage } from './legal/LegalPage';
 
@@ -171,6 +172,7 @@ function AppRoutes() {
           <Route path="setup" element={<SchoolSetupScreen />} />
           <Route path="audit-log" element={<AuditLogScreen />} />
           <Route path="data" element={<DataPrivacyScreen />} />
+          <Route path="subscription" element={<SubscriptionScreen />} />
           <Route path="district" element={<DistrictOverviewScreen />} />
           <Route path="security" element={<SecurityScreen />} />
         </Route>

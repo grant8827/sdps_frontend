@@ -2006,3 +2006,29 @@ a.btn {
   gap: 14px;
   flex-wrap: wrap;
 }
+
+/* Subscription page: how full the plan is, and the plan cards. */
+.capacity-bar {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--chip-bg);
+  overflow: hidden;
+}
+.capacity-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+}
+.plan-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+.plan-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+}
+.plan-card-current {
+  border-color: var(--blue);
+}

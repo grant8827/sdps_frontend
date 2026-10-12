@@ -19,7 +19,7 @@ export function AdminLayout() {
         { to: '/admin/families', label: 'Families' },
         { to: '/admin/students', label: 'Students' },
         { to: '/admin/notices', label: 'Messages' },
-        ...(canManageSchool ? [{ to: '/admin/setup', label: 'School Setup' }, { to: '/admin/audit-log', label: 'Audit Log' }, { to: '/admin/data', label: 'Data & Privacy' }] : []),
+        ...(canManageSchool ? [{ to: '/admin/setup', label: 'School Setup' }, { to: '/admin/audit-log', label: 'Audit Log' }, { to: '/admin/data', label: 'Data & Privacy' }, { to: '/admin/subscription', label: 'Subscription' }] : []),
       ]}
     >
       {/* Remount the page when the school switcher changes, so it reloads that school's data. */}

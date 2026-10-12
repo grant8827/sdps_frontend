@@ -316,15 +316,28 @@ export const api = {
   // Billing
   billingSummary: (token: string) => request<BillingSummary>('/superadmin/billing/summary', {}, token),
   billingPlans: (token: string) => request<BillingPlan[]>('/superadmin/billing/plans', {}, token),
-  createPlan: (token: string, input: { name: string; description?: string; pricingModel: 'FLAT' | 'PER_STUDENT'; priceCents: number; interval: 'MONTH' | 'YEAR' }) =>
+  createPlan: (token: string, input: PlanInput & { name: string }) =>
     request<{ id: string }>('/superadmin/billing/plans', { method: 'POST', body: JSON.stringify(input) }, token),
-  updatePlan: (token: string, planId: string, input: { name?: string; description?: string; priceCents?: number; active?: boolean }) =>
+  updatePlan: (token: string, planId: string, input: PlanInput & { active?: boolean }) =>
     request<void>(`/superadmin/billing/plans/${planId}`, { method: 'PATCH', body: JSON.stringify(input) }, token),
-  subscriptions: (token: string, query: { status?: string; search?: string; page?: number } = {}) =>
+  planHistory: (token: string, planId: string) => request<PlanHistoryEntry[]>(`/superadmin/billing/plans/${planId}/history`, {}, token),
+  billingSettings: (token: string) => request<BillingSettings>('/superadmin/billing/settings', {}, token),
+  saveBillingSettings: (token: string, input: { trialDays?: number; graceDays?: number; trialPlanId?: string }) =>
+    request<void>('/superadmin/billing/settings', { method: 'PUT', body: JSON.stringify(input) }, token),
+  subscriptionRequests: (token: string, status: SubscriptionRequest['status'] = 'OPEN') =>
+    request<PlatformSubscriptionRequest[]>(`/superadmin/billing/requests?status=${status}`, {}, token),
+  resolveSubscriptionRequest: (token: string, requestId: string, input: { approve: boolean; note?: string; priceCents?: number }) =>
+    request<void>(`/superadmin/billing/requests/${requestId}/resolve`, { method: 'POST', body: JSON.stringify(input) }, token),
+  // A school administrator's own subscription page
+  mySubscription: (token: string) => request<SchoolSubscriptionView>('/admin/subscription', {}, token),
+  requestSubscriptionChange: (token: string, input: { type: 'CHANGE_PLAN' | 'CANCEL'; planId?: string; interval?: BillingInterval; note?: string; confirm: true }) =>
+    request<{ id: string }>('/admin/subscription/requests', { method: 'POST', body: JSON.stringify(input) }, token),
+  withdrawSubscriptionRequest: (token: string, requestId: string) => request<void>(`/admin/subscription/requests/${requestId}`, { method: 'DELETE' }, token),
+  subscriptions: (token: string, query: { status?: string; search?: string; planId?: string; renewsBefore?: string; page?: number } = {}) =>
     request<Paged<SubscriptionRow>>(`/superadmin/billing/subscriptions?${toQuery(query)}`, {}, token),
-  setSubscription: (token: string, schoolId: string, input: { planId: string; status: string; startedOn?: string; currentPeriodEnd?: string; notes?: string }) =>
+  setSubscription: (token: string, schoolId: string, input: { planId: string; status: string; interval?: BillingInterval; priceCents?: number; reason?: string; trialDays?: number; trialEndsOn?: string; startedOn?: string; currentPeriodEnd?: string; notes?: string }) =>
     request<void>(`/superadmin/billing/schools/${schoolId}/subscription`, { method: 'PUT', body: JSON.stringify(input) }, token),
-  schoolBilling: (token: string, schoolId: string) => request<{ subscription: SchoolSubscription | null; invoices: Invoice[] }>(`/superadmin/billing/schools/${schoolId}`, {}, token),
+  schoolBilling: (token: string, schoolId: string) => request<{ subscription: SchoolSubscription | null; invoices: Invoice[]; activeStudents: number; studentLimit: number | null; level: CapacityLevel; enrollmentHistory: EnrollmentEntry[] }>(`/superadmin/billing/schools/${schoolId}`, {}, token),
   invoices: (token: string, query: { status?: string; schoolId?: string; page?: number } = {}) =>
     request<Paged<Invoice>>(`/superadmin/billing/invoices?${toQuery(query)}`, {}, token),
   invoice: (token: string, invoiceId: string) => request<Invoice & { payments: Payment[] }>(`/superadmin/billing/invoices/${invoiceId}`, {}, token),
@@ -434,13 +447,41 @@ export interface BackgroundJob {
   id: string; type: string; params: { reportType?: string; query?: { from?: string; to?: string; schoolId?: string } }; status: 'QUEUED' | 'RUNNING' | 'SUCCEEDED' | 'FAILED';
   error: string | null; resultName: string | null; resultSize: number | null; createdAt: string; finishedAt: string | null; createdBy: string | null;
 }
-export interface BillingPlan { id: string; name: string; description: string | null; pricingModel: 'FLAT' | 'PER_STUDENT'; priceCents: number; currency: string; interval: 'MONTH' | 'YEAR'; active: boolean; schools: number }
+export type BillingInterval = 'MONTH' | 'YEAR';
+/** How full a school's plan is: NEAR = 80%+, CLOSE = 90%+, FULL = 100%. */
+export type CapacityLevel = 'OK' | 'NEAR' | 'CLOSE' | 'FULL';
+/** A plan sets a student limit (null = none) and prices; every plan has every feature. */
+export interface PlanTerms { studentLimit: number | null; monthlyPriceCents: number | null; annualPriceCents: number | null; customPricing: boolean }
+export interface BillingPlan extends PlanTerms { id: string; name: string; description: string | null; currency: string; sortOrder: number; active: boolean; schools: number }
+export type PlanInput = Partial<PlanTerms> & { name?: string; description?: string; sortOrder?: number };
+export interface PlanHistoryEntry extends PlanTerms { changedBy: string | null; at: string }
+export interface BillingSettings { trialDays: number; graceDays: number; trialPlanId: string }
+export interface EnrollmentEntry { activeStudents: number; reason: string | null; at: string }
+export interface SubscriptionRequest {
+  id: string; type: 'CHANGE_PLAN' | 'CANCEL'; planId: string | null; planName: string | null; interval: BillingInterval | null; note: string | null;
+  status: 'OPEN' | 'APPROVED' | 'DECLINED' | 'WITHDRAWN'; requestedBy: string | null; resolvedBy: string | null; resolutionNote: string | null; createdAt: string; resolvedAt: string | null;
+}
+export interface PlatformSubscriptionRequest extends SubscriptionRequest {
+  schoolId: string; schoolName: string; priceCents: number | null; customPricing: boolean | null; currentPlanName: string | null; currentStatus: string | null; currentPeriodEnd: string | null; students: number;
+}
+export interface SchoolPlanOption extends PlanTerms { id: string; name: string; description: string | null; currency: string; current: boolean; recommended: boolean; tooSmall: boolean }
+export interface SchoolSubscriptionView {
+  subscription: {
+    status: 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELED'; planId: string; planName: string; studentLimit: number | null; customPricing: boolean;
+    interval: BillingInterval; priceCents: number | null; currency: string; startedOn: string; currentPeriodEnd: string | null;
+    trialEndsOn: string | null; trialDaysLeft: number | null; trialEnded: boolean; cancelAtPeriodEnd: boolean;
+  } | null;
+  activeStudents: number; studentLimit: number | null; remaining: number | null; percentUsed: number | null; level: CapacityLevel;
+  plans: SchoolPlanOption[]; graceDays: number; openRequest: SubscriptionRequest | null; requests: SubscriptionRequest[];
+  invoices: Omit<Invoice, 'schoolId' | 'schoolName' | 'voidReason' | 'createdAt'>[]; enrollmentHistory: EnrollmentEntry[];
+}
 export interface SubscriptionRow {
   schoolId: string; schoolName: string; schoolStatus: string; id: string | null; status: 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'NONE';
-  planId: string | null; planName: string | null; pricingModel: string | null; priceCents: number | null; interval: string | null;
+  planId: string | null; planName: string | null; studentLimit: number | null; customPricing: boolean | null; priceCents: number | null; interval: BillingInterval;
+  agreedPrice: boolean; trialEndsOn: string | null; cancelAtPeriodEnd: boolean | null;
   startedOn: string | null; currentPeriodEnd: string | null; notes: string | null; students: number;
 }
-export interface SchoolSubscription { status: string; startedOn: string; currentPeriodEnd: string | null; notes: string | null; planName: string; pricingModel: string; priceCents: number; interval: string }
+export interface SchoolSubscription { status: string; startedOn: string; currentPeriodEnd: string | null; notes: string | null; planName: string; pricingModel: string; priceCents: number | null; interval: string; studentLimit: number | null; trialEndsOn: string | null; cancelAtPeriodEnd: boolean }
 export interface Invoice {
   id: string; number: string; schoolId: string; schoolName: string; description: string; amountCents: number; currency: string;
   status: 'DRAFT' | 'OPEN' | 'PAID' | 'VOID'; periodStart: string | null; periodEnd: string | null; dueOn: string | null; issuedAt: string | null;
@@ -449,6 +490,7 @@ export interface Invoice {
 export interface Payment { id: string; amountCents: number; method: string; reference: string | null; receivedOn: string; recordedBy: string | null }
 export interface BillingSummary {
   openCents: number; openCount: number; overdueCents: number; overdueCount: number; receivedLast30DaysCents: number;
+  monthlyRecurringCents: number; annualRecurringCents: number; openRequests: number;
   subscriptions: Record<string, number>; problems: { id: string; name: string; overdueInvoices: number; overdueCents: number; pastDue: boolean }[];
 }
 export type HealthStatus = 'ok' | 'degraded' | 'down' | 'not_configured' | 'not_offered' | 'unknown';
