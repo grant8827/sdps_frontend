@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Screen } from '../../components/Screen';
 import { NoticeComposer, type NoticeTarget } from '../../components/NoticeComposer';
+import { SentNotices } from '../../components/SentNotices';
 import { useAuth } from '../../context/AuthContext';
 import { useNotices } from '../../context/NoticesContext';
 import { api } from '../../services/api';
 
-type Tab = 'messages' | 'compose';
+type Tab = 'messages' | 'unread' | 'sent' | 'compose';
 type ComposeTarget = 'teacher' | 'admin';
 
 /** Parent Tab 3 - Messages: announcements from school/teachers, and a way to message a specific teacher or the school office. */
@@ -69,10 +70,15 @@ export function NoticesScreen() {
 
   const sortedNotices = useMemo(() => notices.slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt)), [notices]);
 
+  const unread = sortedNotices.filter(n => !n.read);
+  const shown = tab === 'unread' ? unread : sortedNotices;
+
   return (
     <Screen title="Messages" subtitle="Announcements from the school and your child's teacher.">
       <div className="subtabs">
         <button type="button" className={`subtab${tab === 'messages' ? ' subtab-active' : ''}`} onClick={() => setTab('messages')}>Messages</button>
+        <button type="button" className={`subtab${tab === 'unread' ? ' subtab-active' : ''}`} onClick={() => setTab('unread')}>{unread.length > 0 ? `Unread (${unread.length})` : 'Unread'}</button>
+        <button type="button" className={`subtab${tab === 'sent' ? ' subtab-active' : ''}`} onClick={() => setTab('sent')}>Sent</button>
         <button type="button" className={`subtab${tab === 'compose' ? ' subtab-active' : ''}`} onClick={() => setTab('compose')}>Compose</button>
       </div>
 
@@ -111,11 +117,13 @@ export function NoticesScreen() {
         </>
       )}
 
-      {tab === 'messages' && (
-        sortedNotices.length === 0 ? (
-          <p className="empty-text">No messages yet.</p>
+      {tab === 'sent' && <SentNotices />}
+
+      {(tab === 'messages' || tab === 'unread') && (
+        shown.length === 0 ? (
+          <p className="empty-text">{tab === 'unread' ? 'No unread messages.' : 'No messages yet.'}</p>
         ) : (
-          sortedNotices.map(notice => (
+          shown.map(notice => (
             <button
               key={notice.id}
               type="button"

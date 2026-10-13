@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Screen } from '../../components/Screen';
 import { PersonPickerModal } from '../../components/PersonPickerModal';
+import { SentNotices } from '../../components/SentNotices';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import type { Notice } from '../../types';
 
-type Tab = 'messages' | 'send';
+type Tab = 'messages' | 'unread' | 'sent' | 'send';
 type Audience = 'ALL_STAFF' | 'ONE_STAFF' | 'ALL_PARENTS' | 'ONE_PARENT';
 
 const STAFF_ROLE_LABELS: Record<string, string> = { teacher: 'Teacher', school_admin: 'Admin', staff: 'Front Desk / Office Staff' };
@@ -87,10 +88,15 @@ export function NoticesScreen() {
     }
   };
 
+  const unread = messages.filter(n => !n.read);
+  const shown = tab === 'unread' ? unread : messages;
+
   return (
     <Screen title="Messages" subtitle="Send and review messages to staff and parents.">
       <div className="subtabs">
         <button type="button" className={`subtab${tab === 'messages' ? ' subtab-active' : ''}`} onClick={() => setTab('messages')}>Messages</button>
+        <button type="button" className={`subtab${tab === 'unread' ? ' subtab-active' : ''}`} onClick={() => setTab('unread')}>{unread.length > 0 ? `Unread (${unread.length})` : 'Unread'}</button>
+        <button type="button" className={`subtab${tab === 'sent' ? ' subtab-active' : ''}`} onClick={() => setTab('sent')}>Sent</button>
         <button type="button" className={`subtab${tab === 'send' ? ' subtab-active' : ''}`} onClick={() => setTab('send')}>Send Message</button>
       </div>
       {message && <div className="card">{message}</div>}
@@ -132,11 +138,13 @@ export function NoticesScreen() {
         />
       )}
 
-      {tab === 'messages' && (
-        messages.length === 0 ? (
-          <p className="empty-text">No messages yet.</p>
+      {tab === 'sent' && <SentNotices />}
+
+      {(tab === 'messages' || tab === 'unread') && (
+        shown.length === 0 ? (
+          <p className="empty-text">{tab === 'unread' ? 'No unread messages.' : 'No messages yet.'}</p>
         ) : (
-          messages.map(notice => (
+          shown.map(notice => (
             <button
               key={notice.id}
               type="button"

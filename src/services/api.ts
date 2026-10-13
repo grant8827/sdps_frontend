@@ -1,4 +1,4 @@
-import type { AuthSession, Child, LoginResult, Notice, PlatformRole, QueueItem } from '../types';
+import type { AuthSession, Child, LoginResult, Notice, PlatformRole, QueueItem, SentNotice } from '../types';
 
 // Empty by default — a bare `/api${path}` relative fetch, which is
 // correct both for local dev (Vite's server.proxy in vite.config.ts
@@ -215,6 +215,8 @@ export const api = {
   myNotices: (token: string) =>
     request<(Omit<Notice, 'read'> & { read: number })[]>('/me/notices', {}, token)
       .then(rows => rows.map(row => ({ ...row, read: Boolean(row.read) }))),
+  /** Sent box — what the signed-in user sent themselves, any role. */
+  sentNotices: (token: string) => request<SentNotice[]>('/notices/sent', {}, token),
   markNoticeRead: (token: string, noticeId: string) => request<void>(`/notices/${noticeId}/read`, { method: 'POST' }, token),
   inviteGuardian: (token: string, input: { fullName: string; email: string; phone?: string; relationship: string }) =>
     request<{ id: string; status: 'PENDING' } & InviteResult>('/me/guardians', { method: 'POST', body: JSON.stringify(input) }, token),

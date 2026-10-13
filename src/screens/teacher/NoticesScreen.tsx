@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Screen } from '../../components/Screen';
 import { NoticeComposer, type NoticeTarget, type RecipientOption } from '../../components/NoticeComposer';
+import { SentNotices } from '../../components/SentNotices';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import type { Notice } from '../../types';
 
-type Tab = 'messages' | 'compose';
+type Tab = 'messages' | 'unread' | 'sent' | 'compose';
 
 /** Teacher's Messages screen: an inbox (All Staff broadcasts, plus anything addressed to this teacher), and a composer to message the class or one parent. */
 export function NoticesScreen() {
@@ -56,10 +57,15 @@ export function NoticesScreen() {
     }
   };
 
+  const unread = notices.filter(n => !n.read);
+  const shown = tab === 'unread' ? unread : notices;
+
   return (
     <Screen title="Messages" subtitle="School announcements, and messages to your class or a parent.">
       <div className="subtabs">
         <button type="button" className={`subtab${tab === 'messages' ? ' subtab-active' : ''}`} onClick={() => setTab('messages')}>Messages</button>
+        <button type="button" className={`subtab${tab === 'unread' ? ' subtab-active' : ''}`} onClick={() => setTab('unread')}>{unread.length > 0 ? `Unread (${unread.length})` : 'Unread'}</button>
+        <button type="button" className={`subtab${tab === 'sent' ? ' subtab-active' : ''}`} onClick={() => setTab('sent')}>Sent</button>
         <button type="button" className={`subtab${tab === 'compose' ? ' subtab-active' : ''}`} onClick={() => setTab('compose')}>Compose</button>
       </div>
       {message && <div className="card">{message}</div>}
@@ -81,11 +87,13 @@ export function NoticesScreen() {
         </>
       )}
 
-      {tab === 'messages' && (
-        notices.length === 0 ? (
-          <p className="empty-text">No messages yet.</p>
+      {tab === 'sent' && <SentNotices />}
+
+      {(tab === 'messages' || tab === 'unread') && (
+        shown.length === 0 ? (
+          <p className="empty-text">{tab === 'unread' ? 'No unread messages.' : 'No messages yet.'}</p>
         ) : (
-          notices.map(notice => (
+          shown.map(notice => (
             <button
               key={notice.id}
               type="button"

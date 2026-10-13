@@ -117,3 +117,12 @@ export interface Notice {
   createdAt: string; // ISO timestamp
   read: boolean;
 }
+
+/** A notice the signed-in user sent — the Sent tab. `recipient` is a display label ("All Parents", "School Office", or a person's name). */
+export interface SentNotice {
+  id: string;
+  title: string;
+  body: string;
+  recipient: string;
+  createdAt: string; // ISO timestamp
+}
