@@ -22,8 +22,11 @@ export function PinDialog({ mode, childName, onSubmit, onForgot, onClose }: {
   const firstRef = useRef<HTMLInputElement>(null);
   const titleId = useId();
 
+  // Focus the first box once, when the popup opens. Not in the effect
+  // below: the screen behind re-renders every few seconds with a new
+  // onClose, and refocusing each time pulled the cursor out of "Type it again".
+  useEffect(() => { firstRef.current?.focus(); }, []);
   useEffect(() => {
-    firstRef.current?.focus();
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
