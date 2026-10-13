@@ -3,7 +3,7 @@ import type { ChildStatus } from '../types';
 export const CHILD_STATUS_LABEL: Record<ChildStatus, string> = {
   AT_HOME: 'At Home',
   DROPOFF_REQUESTED: 'Drop-off Requested',
-  PRESENT: 'Present',
+  PRESENT: 'At School',
   PICKUP_REQUESTED: 'Pick-up Requested',
   PICKED_UP: 'Picked Up',
 };

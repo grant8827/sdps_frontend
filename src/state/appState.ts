@@ -122,7 +122,7 @@ export function approveQueueItem(item: QueueItem): void {
 
   children = children.map(c =>
     c.id === item.childId
-      ? { ...c, status: item.requestType === 'DROP_OFF' ? 'PRESENT' : 'PICKED_UP' }
+      ? { ...c, status: item.requestType === 'DROP_OFF' ? 'PRESENT' : 'AT_HOME' }
       : c,
   );
 
