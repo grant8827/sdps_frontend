@@ -109,7 +109,7 @@ export function DropoffPickupScreen() {
               <button
                 type="button"
                 className="btn btn-primary"
-                disabled={child.status !== 'AT_HOME' || !atCampus}
+                disabled={(child.status !== 'AT_HOME' && child.status !== 'PICKED_UP') || !atCampus}
                 onClick={() => requestDropOff(child)}
               >
                 Drop Off
