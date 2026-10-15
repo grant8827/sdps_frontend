@@ -4,6 +4,8 @@ import { InviteResult } from '../../components/InviteResult';
 import { useAuth } from '../../context/AuthContext';
 import { AttendanceList } from '../../components/AttendanceList';
 import { SummaryTile } from '../../components/SummaryTile';
+import { PlanStatusBanner } from '../../components/PlanStatusBanner';
+import { addStudentBlocked, usePlanStatus } from '../../utils/planStatus';
 import { api, type AdminSetup, type AttendanceRow, type AttendanceSummary, type InviteResult as InviteResultData, type SettableAttendanceStatus, type Student } from '../../services/api';
 
 interface DraftChild {
@@ -32,6 +34,9 @@ export function StudentManagementScreen() {
   const [message, setMessage] = useState('');
   const [invite, setInvite] = useState<{ name: string; result: InviteResultData } | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // Warn (and block the Add button) before the server would refuse it.
+  const { plan, reload: reloadPlan } = usePlanStatus();
+  const blocked = addStudentBlocked(plan);
   const [gradeFilter, setGradeFilter] = useState('');
   const [search, setSearch] = useState('');
   const [attendanceClassId, setAttendanceClassId] = useState('');
@@ -138,6 +143,7 @@ export function StudentManagementScreen() {
       setMessage(error instanceof Error ? error.message : 'Could not add student(s)');
     } finally {
       setSubmitting(false);
+      reloadPlan();
     }
   };
 
@@ -165,6 +171,7 @@ export function StudentManagementScreen() {
       {canManageSchool && <button type="button" className={`subtab${tab === 'register' ? ' subtab-active' : ''}`} onClick={() => setTab('register')}>Register a Student</button>}
     </div>
     {message && <div className="card">{message}</div>}
+    {(tab === 'register' || blocked) && <PlanStatusBanner plan={plan} />}
     {invite && <InviteResult name={invite.name} result={invite.result} onDismiss={() => setInvite(null)} />}
 
     {tab === 'register' && (
@@ -204,7 +211,10 @@ export function StudentManagementScreen() {
           <p className="field-label">Link an existing parent, or create one below — applies to every child above.</p>
           <select className="input" value={guardianForm.guardianId} onChange={e => setGuardianField('guardianId', e.target.value)}><option value="">Create new parent account</option>{setup?.guardians.map(g => <option key={g.id} value={g.id}>{g.fullName} — {g.email}</option>)}</select>
           {!guardianForm.guardianId && <><input className="input" placeholder="Parent full name" value={guardianForm.guardianName} onChange={e => setGuardianField('guardianName', e.target.value)} /><input className="input" type="email" placeholder="Parent email" value={guardianForm.guardianEmail} onChange={e => setGuardianField('guardianEmail', e.target.value)} /><input className="input" placeholder="Phone" value={guardianForm.guardianPhone} onChange={e => setGuardianField('guardianPhone', e.target.value)} /><p className="field-label" style={{ margin: 0 }}>The parent gets an email with a link to choose their own password.</p></>}
-          <button className="btn btn-primary" onClick={submit} disabled={submitting}>{submitting ? 'Adding…' : children.length > 1 ? `Add ${children.length} Students` : 'Add Student'}</button>
+          {!blocked && plan?.remaining != null && children.length > plan.remaining && (
+            <p className="form-error" style={{ margin: 0 }}>Your plan has room for {plan.remaining} more {plan.remaining === 1 ? 'student' : 'students'}, so only the first {plan.remaining} will be added. Choose a larger plan under Upgrade Plan to add them all.</p>
+          )}
+          <button className="btn btn-primary" onClick={submit} disabled={submitting || Boolean(blocked)}>{submitting ? 'Adding…' : children.length > 1 ? `Add ${children.length} Students` : 'Add Student'}</button>
         </div>
       </>
     )}

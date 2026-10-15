@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { SchoolBadge } from '../../components/SchoolBadge';
+import { PlanStatusBanner } from '../../components/PlanStatusBanner';
+import { usePlanStatus } from '../../utils/planStatus';
 import { useSearchParams } from 'react-router-dom';
 import { Screen } from '../../components/Screen';
 import { SummaryTile } from '../../components/SummaryTile';
@@ -25,6 +27,7 @@ export function OverviewScreen() {
   const { token } = useAuth();
   const [overview, setOverview] = useState<AdminOverview | null>(null);
   const [notices, setNotices] = useState<Notice[]>([]);
+  const { plan } = usePlanStatus();
 
   useEffect(() => {
     if (!token) return;
@@ -51,6 +54,7 @@ export function OverviewScreen() {
   return (
     <Screen title="Overview" subtitle="School-wide snapshot.">
       <SchoolBadge />
+      <PlanStatusBanner plan={plan} />
       {paid && <div className="card" role="status">Thank you. Your payment is being confirmed, and your plan will show under Subscription in a moment.</div>}
       <div className="tile-grid">
         <SummaryTile label="Total Enrolled Students" value={overview?.totalStudents ?? 0} />

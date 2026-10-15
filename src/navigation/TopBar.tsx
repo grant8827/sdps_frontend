@@ -5,7 +5,7 @@ import { BrandLogo } from '../components/BrandLogo';
 
 /** Persistent app bar shown above every role's tabs, mirroring the RN navigators' headerRight. */
 export function TopBar({ menuOpen, onToggleMenu }: { menuOpen: boolean; onToggleMenu: () => void }) {
-  const { user, schools, activeSchoolId, setActiveSchool, supportSession } = useAuth();
+  const { user, schools, activeSchoolId, setActiveSchool, supportSession, canManageSchool } = useAuth();
   const securityPath = user?.platform && !supportSession ? '/platform/security' : `/${user?.role}/security`;
   return (
     <header className="topbar">
@@ -26,6 +26,7 @@ export function TopBar({ menuOpen, onToggleMenu }: { menuOpen: boolean; onToggle
         )}
         {user?.platform && supportSession && <Link to="/platform" className="logout-btn" style={{ textDecoration: 'none' }}>Platform</Link>}
         {user && <Link to={securityPath} className="logout-btn" style={{ textDecoration: 'none' }}>Security</Link>}
+        {user?.role === 'admin' && canManageSchool && <Link to="/admin/subscription" className="logout-btn" style={{ textDecoration: 'none' }}>Upgrade Plan</Link>}
         <LogoutButton />
         {/* Hidden above the ~860px breakpoint (same one PublicNavbar uses) — the sidebar shows as a persistent left column there instead. */}
         <button
