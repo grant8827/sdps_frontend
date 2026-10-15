@@ -62,6 +62,7 @@ export function SchoolSetupScreen() {
   const [locationMessage, setLocationMessage] = useState('');
   const [savingLocation, setSavingLocation] = useState(false);
   const [savingLogo, setSavingLogo] = useState(false);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
   const load = async () => {
     if (!token) return;
@@ -137,13 +138,16 @@ export function SchoolSetupScreen() {
   // The logo saves as soon as it is chosen (or removed).
   const saveLogo = async (logoDataUrl: string) => {
     if (!token) return;
+    setLogoPreview(logoDataUrl);
     setSavingLogo(true);
-    setMessage('');
+    setMessage(logoDataUrl ? 'Saving logo…' : 'Removing logo…');
     try {
       await api.updateSchoolProfile(token, { logoDataUrl });
       await load();
+      setLogoPreview(null);
       setMessage(logoDataUrl ? 'Logo saved.' : 'Logo removed.');
     } catch (error) {
+      setLogoPreview(null);
       setMessage(error instanceof Error ? error.message : 'Could not save the logo');
     } finally {
       setSavingLogo(false);
@@ -166,7 +170,7 @@ export function SchoolSetupScreen() {
           <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <p className="form-title" style={{ margin: 0 }}>School logo</p>
             <p className="field-label" style={{ margin: 0 }}>Shown at the top of the dashboard for your parents, teachers and staff.</p>
-            <LogoPicker value={school?.logoUrl ?? ''} onChange={saveLogo} disabled={savingLogo || !school} />
+            <LogoPicker value={logoPreview ?? school?.logoUrl ?? ''} onChange={saveLogo} disabled={savingLogo || !school} />
           </div>
 
           <p className="form-title" style={{ margin: '4px 0' }}>Locations</p>

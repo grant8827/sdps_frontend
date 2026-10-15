@@ -24,6 +24,11 @@ const todayIso = () => new Date().toISOString().slice(0, 10);
 
 type Tab = 'list' | 'attendance' | 'register';
 
+interface EditStudentForm extends DraftChild {
+  id: string;
+  schoolYearId: string;
+}
+
 export function StudentManagementScreen() {
   const { token, canManageSchool } = useAuth();
   const [tab, setTab] = useState<Tab>('list');
@@ -34,6 +39,7 @@ export function StudentManagementScreen() {
   const [message, setMessage] = useState('');
   const [invite, setInvite] = useState<{ name: string; result: InviteResultData } | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [editing, setEditing] = useState<EditStudentForm | null>(null);
   // Warn (and block the Add button) before the server would refuse it.
   const { plan, reload: reloadPlan } = usePlanStatus();
   const blocked = addStudentBlocked(plan);
@@ -95,6 +101,45 @@ export function StudentManagementScreen() {
     const reader = new FileReader();
     reader.onload = () => updateChild(index, { photoDataUrl: typeof reader.result === 'string' ? reader.result : '' });
     reader.readAsDataURL(file);
+  };
+
+  const startEdit = (student: Student) => setEditing({
+    id: student.id,
+    firstName: student.firstName,
+    lastName: student.lastName,
+    studentNumber: student.studentNumber ?? '',
+    dateOfBirth: student.dateOfBirth ?? '',
+    gradeLevelId: student.gradeLevelId,
+    classId: student.classId,
+    schoolYearId: student.schoolYearId,
+    photoDataUrl: '',
+    daycare: student.daycare,
+  });
+
+  const saveStudent = async () => {
+    if (!token || !editing) return;
+    setMessage('');
+    setSubmitting(true);
+    try {
+      await api.updateStudent(token, editing.id, {
+        firstName: editing.firstName,
+        lastName: editing.lastName,
+        studentNumber: editing.studentNumber,
+        dateOfBirth: editing.dateOfBirth,
+        schoolYearId: editing.schoolYearId,
+        gradeLevelId: editing.gradeLevelId,
+        classId: editing.classId,
+        daycare: editing.daycare,
+        ...(editing.photoDataUrl ? { photoDataUrl: editing.photoDataUrl } : {}),
+      });
+      setEditing(null);
+      setMessage('Student updated.');
+      await load();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Could not update student');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const submit = async () => {
@@ -242,6 +287,18 @@ export function StudentManagementScreen() {
 
     {tab === 'list' && (
       <>
+        {editing && (
+          <div className="card" style={{ display: 'grid', gap: 10, marginBottom: 12 }}>
+            <div className="card-header"><p className="form-title" style={{ margin: 0 }}>Edit student</p><button type="button" className="btn btn-secondary btn-sm" onClick={() => setEditing(null)}>Cancel</button></div>
+            <div className="btn-row"><input className="input" placeholder="First name" value={editing.firstName} onChange={e => setEditing({ ...editing, firstName: e.target.value })} /><input className="input" placeholder="Last name" value={editing.lastName} onChange={e => setEditing({ ...editing, lastName: e.target.value })} /></div>
+            <div className="btn-row"><input className="input" placeholder="Student number" value={editing.studentNumber} onChange={e => setEditing({ ...editing, studentNumber: e.target.value })} /><input className="input" type="date" value={editing.dateOfBirth} onChange={e => setEditing({ ...editing, dateOfBirth: e.target.value })} /></div>
+            <select className="input" value={editing.gradeLevelId} onChange={e => setEditing({ ...editing, gradeLevelId: e.target.value, classId: '' })}>{setup?.gradeLevels.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}</select>
+            <select className="input" value={editing.classId} onChange={e => setEditing({ ...editing, classId: e.target.value })}><option value="">Select a class</option>{setup?.classes.filter(c => c.schoolYearId === editing.schoolYearId && c.gradeLevelId === editing.gradeLevelId).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
+            <label className="btn-row" style={{ alignItems: 'center', gap: 8 }}><input type="checkbox" checked={editing.daycare} onChange={e => setEditing({ ...editing, daycare: e.target.checked })} />Daycare (extended time)</label>
+            <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', width: 'fit-content' }}>Replace photo<input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => { const file = e.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => setEditing(current => current ? { ...current, photoDataUrl: String(reader.result) } : current); reader.readAsDataURL(file); }} /></label>
+            <button type="button" className="btn btn-primary" disabled={submitting || !editing.firstName.trim() || !editing.lastName.trim() || !editing.classId} onClick={saveStudent}>{submitting ? 'Saving…' : 'Save changes'}</button>
+          </div>
+        )}
         <div className="btn-row" style={{ alignItems: 'center', marginBottom: 12 }}>
           <p className="field-label" style={{ margin: 0 }}>Filter by grade</p>
           <select className="input" style={{ maxWidth: 220 }} value={gradeFilter} onChange={e => setGradeFilter(e.target.value)}>
@@ -268,6 +325,7 @@ export function StudentManagementScreen() {
                   <td className="actions-cell">
                     {canManageSchool ? (
                       <>
+                        <button type="button" className="btn btn-secondary btn-sm" onClick={() => startEdit(student)}>Edit</button>
                         <button type="button" className="btn btn-secondary btn-sm" onClick={() => toggleSuspend(student)}>{student.enrollmentStatus === 'SUSPENDED' ? 'Reactivate' : 'Suspend'}</button>
                         <button type="button" className="btn btn-secondary btn-sm" onClick={() => exportRecord(student)}>Export</button>
                         <button type="button" className="btn btn-danger btn-sm" onClick={() => remove(student)}>Remove</button>

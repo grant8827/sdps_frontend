@@ -25,6 +25,7 @@ export function TopBar({ menuOpen, onToggleMenu }: { menuOpen: boolean; onToggle
           </select>
         )}
         {user?.platform && supportSession && <Link to="/platform" className="logout-btn" style={{ textDecoration: 'none' }}>Platform</Link>}
+        {user && <Link to={securityPath.replace(/security$/, 'profile')} className="logout-btn" style={{ textDecoration: 'none' }}>Profile</Link>}
         {user && <Link to={securityPath} className="logout-btn" style={{ textDecoration: 'none' }}>Security</Link>}
         {user?.role === 'admin' && canManageSchool && <Link to="/admin/subscription" className="logout-btn" style={{ textDecoration: 'none' }}>Upgrade Plan</Link>}
         <LogoutButton />

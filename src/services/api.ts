@@ -134,6 +134,8 @@ export const api = {
   resetStaffMfa: (token: string, userId: string) => request<void>(`/admin/staff/${userId}/reset-mfa`, { method: 'POST' }, token),
   myStudents: (token: string) => request<Child[]>('/me/students', {}, token),
   myAttendance: (token: string) => request<MyAttendanceChild[]>('/me/attendance', {}, token),
+  changePassword: (token: string, currentPassword: string, newPassword: string) =>
+    request<void>('/me/change-password', { method: 'POST', body: JSON.stringify({ currentPassword, newPassword }) }, token),
   myClasses: (token: string) => request<MyClassChild[]>('/me/classes', {}, token),
   requestDropOff: (token: string, studentId: string, location: { latitude: number; longitude: number }) => request<{ id: string }>(`/me/students/${studentId}/drop-off`, { method: 'POST', body: JSON.stringify(location) }, token),
   /** A pickup needs the parent's own 6-digit pickup PIN. */
@@ -168,6 +170,8 @@ export const api = {
     request<void>(`/admin/campuses/${campusId}`, { method: 'PATCH', body: JSON.stringify(input) }, token),
   students: (token: string) => request<Student[]>('/admin/students', {}, token),
   addStudent: (token: string, input: unknown) => request<{ id: string } & InviteResult>('/admin/students', { method: 'POST', body: JSON.stringify(input) }, token),
+  updateStudent: (token: string, studentId: string, input: unknown) =>
+    request<void>(`/admin/students/${studentId}`, { method: 'PATCH', body: JSON.stringify(input) }, token),
   setStudentStatus: (token: string, studentId: string, status: 'ACTIVE' | 'SUSPENDED') =>
     request<void>(`/admin/students/${studentId}`, { method: 'PATCH', body: JSON.stringify({ status }) }, token),
   deleteStudent: (token: string, studentId: string) => request<void>(`/admin/students/${studentId}`, { method: 'DELETE' }, token),
@@ -607,6 +611,11 @@ export interface Student extends Child {
   firstName: string;
   lastName: string;
   gradeLevelId: string;
+  schoolYearId: string;
+  classId: string;
+  dateOfBirth?: string;
+  studentNumber?: string;
+  daycare: boolean;
   gradeName: string;
   className?: string;
   photoUrl?: string;

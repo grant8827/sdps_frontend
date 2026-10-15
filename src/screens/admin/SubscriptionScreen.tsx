@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Screen } from '../../components/Screen';
 import { useAuth } from '../../context/AuthContext';
 import { api, type BillingInterval, type SchoolPlanOption, type SchoolSubscriptionView } from '../../services/api';
@@ -139,6 +139,9 @@ export function SubscriptionScreen() {
                     : `Free trial with every feature: ${sub.trialDaysLeft} ${sub.trialDaysLeft === 1 ? 'day' : 'days'} left (ends ${sub.trialEndsOn}). No card needed.`
                 : <>{priceLabel(sub.priceCents, sub.interval, sub.currency)}{sub.currentPeriodEnd && ` · ${sub.cancelAtPeriodEnd || sub.status === 'CANCELED' ? 'ends' : 'renews'} ${sub.currentPeriodEnd}`}</>}
             </div>
+            {sub.status === 'TRIALING' && !sub.trialEnded && !data.paidOnline && (
+              <div className="field-label" style={{ margin: 0 }}><Link to="/admin/choose-plan">Change the plan my free trial is on</Link></div>
+            )}
             {sub.cancelAtPeriodEnd && (
               <div className="field-label" style={{ margin: 0 }}>
                 Your subscription is set to end on {sub.currentPeriodEnd}.{' '}

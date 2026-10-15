@@ -34,6 +34,9 @@ export function FacultyManagementScreen() {
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [invite, setInvite] = useState<{ name: string; result: InviteResultData } | null>(null);
+  // Editing a teacher: name, classroom and photo (photoDataUrl: undefined = untouched, '' = removed).
+  const [editing, setEditing] = useState<{ member: StaffRow; fullName: string; classId: string; photoDataUrl?: string } | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const load = async () => {
     if (!token) return;
@@ -100,6 +103,28 @@ export function FacultyManagementScreen() {
     try { setInvite({ name: member.fullName, result: await api.sendAccountLink(token, member.id) }); }
     catch (error) { setMessage(error instanceof Error ? error.message : 'Could not send the link'); }
   };
+  const saveEdit = async () => {
+    if (!token || !editing) return;
+    if (!editing.fullName.trim()) { setMessage('Name is required.'); return; }
+    setSavingEdit(true);
+    setMessage('');
+    try {
+      await api.updateTeacher(token, editing.member.id, { fullName: editing.fullName.trim(), classId: editing.classId || null, photoDataUrl: editing.photoDataUrl });
+      setMessage(`${editing.fullName.trim()} updated.`);
+      setEditing(null);
+      await load();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Could not save the changes');
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+  const onEditPhotoSelected = (file: File | undefined) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setEditing(current => (current ? { ...current, photoDataUrl: typeof reader.result === 'string' ? reader.result : undefined } : current));
+    reader.readAsDataURL(file);
+  };
   const remove = async (member: StaffRow) => {
     if (!token || !window.confirm(`Delete ${member.fullName}? This removes their account and cannot be undone.`)) return;
     try { await api.deleteStaff(token, member.id); await load(); }
@@ -151,6 +176,33 @@ export function FacultyManagementScreen() {
         </div>
       )}
 
+      {tab === 'staff' && editing && (
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 560 }}>
+          <p className="form-title" style={{ margin: 0 }}>Edit {editing.member.fullName}</p>
+          <div className="btn-row" style={{ alignItems: 'center' }}>
+            {(editing.photoDataUrl ?? editing.member.photoUrl)
+              ? <img src={editing.photoDataUrl ?? editing.member.photoUrl} alt="" className="avatar avatar-lg" />
+              : <span className="avatar avatar-lg avatar-placeholder">{editing.fullName.charAt(0) || '?'}</span>}
+            <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}>
+              Change photo
+              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => onEditPhotoSelected(e.target.files?.[0])} />
+            </label>
+            {(editing.photoDataUrl ?? editing.member.photoUrl) && <button type="button" className="btn btn-secondary btn-sm" onClick={() => setEditing({ ...editing, photoDataUrl: '' })}>Remove photo</button>}
+          </div>
+          <input className="input" aria-label="Full name" placeholder="Full Name" value={editing.fullName} onChange={e => setEditing({ ...editing, fullName: e.target.value })} />
+          <label className="field-label" style={{ margin: 0 }}>Classroom
+            <select className="input" value={editing.classId} onChange={e => setEditing({ ...editing, classId: e.target.value })}>
+              <option value="">No classroom</option>
+              {classes.filter(c => !c.teacherId || c.teacherId === editing.member.id).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </label>
+          <div className="action-row">
+            <button type="button" className="btn btn-primary" onClick={saveEdit} disabled={savingEdit}>{savingEdit ? 'Saving…' : 'Save'}</button>
+            <button type="button" className="btn btn-secondary" onClick={() => setEditing(null)}>Cancel</button>
+          </div>
+        </div>
+      )}
+
       {tab === 'staff' && (
         <div className="table-wrap">
           <table className="data-table">
@@ -166,6 +218,7 @@ export function FacultyManagementScreen() {
                   <td>{member.className || '—'}</td>
                   <td><span className="pill" style={{ backgroundColor: member.active ? 'var(--green)' : 'var(--red)' }}>{member.active ? 'Active' : 'Suspended'}</span></td>
                   <td className="actions-cell">
+                    {member.role === 'teacher' && <button type="button" className="btn btn-secondary btn-sm" onClick={() => { setMessage(''); setEditing({ member, fullName: member.fullName, classId: member.classId ?? '' }); }}>Edit</button>}
                     <button type="button" className="btn btn-secondary btn-sm" onClick={() => toggleSuspend(member)}>{member.active ? 'Suspend' : 'Reactivate'}</button>
                     {member.active && member.id !== user?.id && (
                       <button type="button" className="btn btn-secondary btn-sm" onClick={() => sendLink(member)}>{member.needsSetup ? 'Resend invite' : 'Email reset link'}</button>

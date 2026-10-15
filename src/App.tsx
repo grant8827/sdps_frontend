@@ -34,6 +34,7 @@ import { ClassManagementScreen } from './screens/admin/ClassManagementScreen';
 import { SchoolSetupScreen } from './screens/admin/SchoolSetupScreen';
 import { AuditLogScreen } from './screens/admin/AuditLogScreen';
 import { SecurityScreen } from './screens/shared/SecurityScreen';
+import { ProfileScreen } from './screens/shared/ProfileScreen';
 import { DataPrivacyScreen } from './screens/admin/DataPrivacyScreen';
 import { SubscriptionScreen } from './screens/admin/SubscriptionScreen';
 import { ChoosePlanScreen } from './screens/admin/ChoosePlanScreen';
@@ -124,6 +125,7 @@ function AppRoutes() {
           <Route path="notices" element={<NoticesScreen />} />
           <Route path="add-guardian" element={<AddGuardianScreen />} />
           <Route path="security" element={<SecurityScreen />} />
+          <Route path="profile" element={<ProfileScreen />} />
         </Route>
       )}
 
@@ -135,6 +137,7 @@ function AppRoutes() {
           <Route path="roster" element={<ClassRosterScreen />} />
           <Route path="notices" element={<TeacherNoticesScreen />} />
           <Route path="security" element={<SecurityScreen />} />
+          <Route path="profile" element={<ProfileScreen />} />
         </Route>
       )}
 
@@ -162,6 +165,7 @@ function AppRoutes() {
           {can('billing:view') && <Route path="billing/invoices" element={<InvoicesScreen />} />}
           {can('billing:view') && <Route path="billing/invoices/:invoiceId" element={<InvoiceDetailScreen />} />}
           <Route path="security" element={<SecurityScreen />} />
+          <Route path="profile" element={<ProfileScreen />} />
         </Route>
       )}
 
@@ -181,6 +185,7 @@ function AppRoutes() {
           <Route path="choose-plan" element={<ChoosePlanScreen />} />
           <Route path="district" element={<DistrictOverviewScreen />} />
           <Route path="security" element={<SecurityScreen />} />
+          <Route path="profile" element={<ProfileScreen />} />
         </Route>
       )}
 
