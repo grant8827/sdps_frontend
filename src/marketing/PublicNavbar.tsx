@@ -6,13 +6,13 @@ const NAV_LINKS = [
   { href: '/#features', label: 'Features' },
   { href: '/#how-it-works', label: 'How it works' },
   { href: '/#safety', label: 'Safety' },
-  { href: '/#pricing', label: 'Pricing' },
+  { href: '/pricing', label: 'Pricing' },
 ];
 
 /**
  * Public marketing navbar — shown on the home page and the legal pages
  * (and reachable from the login page) for logged-out visitors. Section
- * links are "/#..." so they also work from a legal page. The in-app TopBar (with the
+ * links are "/#..." so they also work from a legal page; Pricing is its own page (/pricing). The in-app TopBar (with the
  * Log Out button) takes over once someone's signed in.
  */
 export function PublicNavbar() {
@@ -27,7 +27,9 @@ export function PublicNavbar() {
 
         <nav className="nav-links">
           {NAV_LINKS.map(link => (
-            <a key={link.href} href={link.href}>{link.label}</a>
+            link.href.includes('#')
+              ? <a key={link.href} href={link.href}>{link.label}</a>
+              : <Link key={link.href} to={link.href}>{link.label}</Link>
           ))}
         </nav>
 
@@ -52,9 +54,9 @@ export function PublicNavbar() {
       {menuOpen && (
         <div className="mobile-menu">
           {NAV_LINKS.map(link => (
-            <a key={link.href} href={link.href} onClick={() => setMenuOpen(false)}>
-              {link.label}
-            </a>
+            link.href.includes('#')
+              ? <a key={link.href} href={link.href} onClick={() => setMenuOpen(false)}>{link.label}</a>
+              : <Link key={link.href} to={link.href} onClick={() => setMenuOpen(false)}>{link.label}</Link>
           ))}
           <Link to="/login" onClick={() => setMenuOpen(false)}>Log In</Link>
           <Link to="/register" className="btn btn-primary btn-block" onClick={() => setMenuOpen(false)}>

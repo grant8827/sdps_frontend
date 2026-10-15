@@ -16,7 +16,7 @@ const STANDARD: PublicPlan[] = [
 const INCLUDED = ['Parent, teacher and admin dashboards', 'Location check and pickup PIN', 'Attendance, messages and reports', 'Approved-adult pickup and audit log'];
 
 /**
- * Home page → Pricing. Every plan has every feature; a plan only sets
+ * The Pricing page (PricingPage). Every plan has every feature; a plan only sets
  * how many students the school can have. Each card leads to
  * registration with that plan remembered for the "choose your plan" step.
  */

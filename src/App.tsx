@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
 import { HomePage } from './marketing/HomePage';
+import { PricingPage } from './marketing/PricingPage';
 import { LoginScreen } from './screens/auth/LoginScreen';
 import { RegisterSchoolScreen } from './screens/auth/RegisterSchoolScreen';
 import { ForgotPasswordScreen } from './screens/auth/ForgotPasswordScreen';
@@ -88,6 +89,7 @@ function AppRoutes() {
         <Route path="/set-password" element={<SetPasswordScreen />} />
         <Route path="/set-pin" element={<SetPinScreen />} />
         <Route path="/legal/:slug" element={<LegalPage />} />
+        <Route path="/pricing" element={<PricingPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );

@@ -40,6 +40,7 @@ export function SiteFooter() {
       { label: 'Features', to: '/#features' },
       { label: 'How it works', to: '/#how-it-works' },
       { label: 'Safety & privacy', to: '/#safety' },
+      { label: 'Pricing', to: '/pricing' },
       { label: "Who it's for", to: '/#roles' },
       { label: 'Log in', to: '/login' },
       { label: 'Register your school', to: '/register' },
