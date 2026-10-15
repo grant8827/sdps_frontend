@@ -69,6 +69,7 @@ export function SchoolSetupScreen() {
     const setup = await api.adminSetup(token);
     setSchool(setup.school);
     setCampuses(setup.campuses);
+    return setup;
   };
   useEffect(() => { load().catch(error => setMessage(error.message)); }, [token]);
 
@@ -143,8 +144,12 @@ export function SchoolSetupScreen() {
     setMessage(logoDataUrl ? 'Saving logo…' : 'Removing logo…');
     try {
       await api.updateSchoolProfile(token, { logoDataUrl });
-      await load();
-      setLogoPreview(null);
+      const updated = await load();
+      // Keep the local data URL on screen after a successful upload. This
+      // avoids a flash/disappearance while a newly signed S3 URL propagates;
+      // the next visit uses the saved URL returned by the server.
+      setLogoPreview(logoDataUrl || null);
+      if (logoDataUrl && !updated?.school.logoUrl) throw new Error('The server accepted the upload but did not return the saved logo. Restart the backend and try again.');
       setMessage(logoDataUrl ? 'Logo saved.' : 'Logo removed.');
     } catch (error) {
       setLogoPreview(null);

@@ -27,6 +27,7 @@ type Tab = 'list' | 'attendance' | 'register';
 interface EditStudentForm extends DraftChild {
   id: string;
   schoolYearId: string;
+  currentPhotoUrl: string;
 }
 
 export function StudentManagementScreen() {
@@ -112,6 +113,7 @@ export function StudentManagementScreen() {
     gradeLevelId: student.gradeLevelId,
     classId: student.classId,
     schoolYearId: student.schoolYearId,
+    currentPhotoUrl: student.photoUrl ?? '',
     photoDataUrl: '',
     daycare: student.daycare,
   });
@@ -290,6 +292,12 @@ export function StudentManagementScreen() {
         {editing && (
           <div className="card" style={{ display: 'grid', gap: 10, marginBottom: 12 }}>
             <div className="card-header"><p className="form-title" style={{ margin: 0 }}>Edit student</p><button type="button" className="btn btn-secondary btn-sm" onClick={() => setEditing(null)}>Cancel</button></div>
+            <div className="btn-row" style={{ alignItems: 'center' }}>
+              {editing.photoDataUrl || editing.currentPhotoUrl
+                ? <img src={editing.photoDataUrl || editing.currentPhotoUrl} alt={`${editing.firstName} ${editing.lastName}`} className="avatar avatar-lg" />
+                : <span className="avatar avatar-lg avatar-placeholder">{editing.firstName.charAt(0) || '?'}</span>}
+              <span className="field-label" style={{ margin: 0 }}>{editing.photoDataUrl ? 'New photo selected' : editing.currentPhotoUrl ? 'Current photo' : 'No photo'}</span>
+            </div>
             <div className="btn-row"><input className="input" placeholder="First name" value={editing.firstName} onChange={e => setEditing({ ...editing, firstName: e.target.value })} /><input className="input" placeholder="Last name" value={editing.lastName} onChange={e => setEditing({ ...editing, lastName: e.target.value })} /></div>
             <div className="btn-row"><input className="input" placeholder="Student number" value={editing.studentNumber} onChange={e => setEditing({ ...editing, studentNumber: e.target.value })} /><input className="input" type="date" value={editing.dateOfBirth} onChange={e => setEditing({ ...editing, dateOfBirth: e.target.value })} /></div>
             <select className="input" value={editing.gradeLevelId} onChange={e => setEditing({ ...editing, gradeLevelId: e.target.value, classId: '' })}>{setup?.gradeLevels.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}</select>
