@@ -6,6 +6,7 @@ import { AttendanceList } from '../../components/AttendanceList';
 import { SummaryTile } from '../../components/SummaryTile';
 import { PlanStatusBanner } from '../../components/PlanStatusBanner';
 import { addStudentBlocked, usePlanStatus } from '../../utils/planStatus';
+import { readPhotoFile } from '../../utils/logoFile';
 import { api, type AdminSetup, type AttendanceRow, type AttendanceSummary, type InviteResult as InviteResultData, type SettableAttendanceStatus, type Student } from '../../services/api';
 
 interface DraftChild {
@@ -97,11 +98,20 @@ export function StudentManagementScreen() {
   const removeChild = (index: number) => setChildren(prev => prev.filter((_, i) => i !== index));
   const setGuardianField = (key: keyof typeof guardianForm, value: string) => setGuardianForm(current => ({ ...current, [key]: value }));
 
-  const onPhotoSelected = (index: number, file: File | undefined) => {
+  const onPhotoSelected = async (index: number, file: File | undefined) => {
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => updateChild(index, { photoDataUrl: typeof reader.result === 'string' ? reader.result : '' });
-    reader.readAsDataURL(file);
+    try { updateChild(index, { photoDataUrl: await readPhotoFile(file) }); }
+    catch (error) { setMessage(error instanceof Error ? error.message : 'Could not use that photo.'); }
+  };
+
+  const onEditPhotoSelected = async (file: File | undefined) => {
+    if (!file) return;
+    try {
+      const photoDataUrl = await readPhotoFile(file);
+      setEditing(current => current ? { ...current, photoDataUrl } : current);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Could not use that photo.');
+    }
   };
 
   const startEdit = (student: Student) => setEditing({
@@ -236,7 +246,7 @@ export function StudentManagementScreen() {
                 : <span className="avatar avatar-lg avatar-placeholder">{child.firstName.charAt(0) || '?'}</span>}
               <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}>
                 Upload photo
-                <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => onPhotoSelected(index, e.target.files?.[0])} />
+                <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" style={{ display: 'none' }} onChange={e => { void onPhotoSelected(index, e.target.files?.[0]); e.target.value = ''; }} />
               </label>
             </div>
 
@@ -303,7 +313,7 @@ export function StudentManagementScreen() {
             <select className="input" value={editing.gradeLevelId} onChange={e => setEditing({ ...editing, gradeLevelId: e.target.value, classId: '' })}>{setup?.gradeLevels.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}</select>
             <select className="input" value={editing.classId} onChange={e => setEditing({ ...editing, classId: e.target.value })}><option value="">Select a class</option>{setup?.classes.filter(c => c.schoolYearId === editing.schoolYearId && c.gradeLevelId === editing.gradeLevelId).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
             <label className="btn-row" style={{ alignItems: 'center', gap: 8 }}><input type="checkbox" checked={editing.daycare} onChange={e => setEditing({ ...editing, daycare: e.target.checked })} />Daycare (extended time)</label>
-            <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', width: 'fit-content' }}>Replace photo<input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => { const file = e.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => setEditing(current => current ? { ...current, photoDataUrl: String(reader.result) } : current); reader.readAsDataURL(file); }} /></label>
+            <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', width: 'fit-content' }}>Replace photo<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" style={{ display: 'none' }} onChange={e => { void onEditPhotoSelected(e.target.files?.[0]); e.target.value = ''; }} /></label>
             <button type="button" className="btn btn-primary" disabled={submitting || !editing.firstName.trim() || !editing.lastName.trim() || !editing.classId} onClick={saveStudent}>{submitting ? 'Saving…' : 'Save changes'}</button>
           </div>
         )}
