@@ -4,7 +4,7 @@
 
 **Version:** October 1, 2026
 
-This Data Processing Agreement ("Agreement") is between **[SCHOOL OR DISTRICT NAME]** (the "School") and **GGHighTech LLC**, a [STATE] limited liability company (the "Provider"). It applies to the Provider's School Drop-off & Pick-up service (the "Service").
+This Data Processing Agreement ("Agreement") is between **[SCHOOL OR DISTRICT NAME]** (the "School") and **GGHighTech LLC**, a [STATE] limited liability company (the "Provider"). It applies to the Provider's SDPMPlus service (the "Service").
 
 ## 1. Definitions
 

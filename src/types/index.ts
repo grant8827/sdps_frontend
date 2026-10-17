@@ -1,5 +1,5 @@
 /**
- * Shared domain types for the School Drop-off & Pick-up app.
+ * Shared domain types for the SDPMPlus app.
  * Ported from mobile_app/src/types so the website and the app agree
  * on shape — both are meant to eventually talk to the same Node API.
  */

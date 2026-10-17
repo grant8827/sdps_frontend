@@ -99,7 +99,12 @@ export function DropoffPickupScreen() {
           return (
           <div key={child.id} className="card">
             <div className="card-header">
-              <span className="quick-action-title" style={{ fontSize: 17 }}>{child.fullName}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                {child.photoUrl
+                  ? <img src={child.photoUrl} alt="" className="avatar" />
+                  : <span className="avatar avatar-placeholder">{child.fullName.charAt(0)}</span>}
+                <span className="quick-action-title" style={{ fontSize: 17 }}>{child.fullName}</span>
+              </div>
               <span className="pill" style={{ backgroundColor: CHILD_STATUS_COLOR[child.status], color: CHILD_STATUS_TEXT_COLOR[child.status] }}>
                 {CHILD_STATUS_LABEL[child.status]}
               </span>

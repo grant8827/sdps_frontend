@@ -14,7 +14,7 @@ export function LegalPage() {
   const doc = LEGAL_DOCUMENTS.find(d => d.slug === slug);
 
   useEffect(() => {
-    if (doc) document.title = `${doc.title} · School Drop-off & Pick-up`;
+    if (doc) document.title = `${doc.title} · SDPMPlus`;
     window.scrollTo(0, 0);
   }, [doc]);
 

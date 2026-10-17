@@ -4,7 +4,7 @@
 
 **Last updated:** October 1, 2026
 
-This policy explains how long **GGHighTech LLC** keeps information in School Drop-off & Pick-up (the "Service"), and how schools export and delete it. Schools decide how long their records are kept, within the limits below, so they can follow their own and their district's records policies.
+This policy explains how long **GGHighTech LLC** keeps information in SDPMPlus (the "Service"), and how schools export and delete it. Schools decide how long their records are kept, within the limits below, so they can follow their own and their district's records policies.
 
 ## Who decides
 

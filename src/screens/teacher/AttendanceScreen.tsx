@@ -133,7 +133,12 @@ export function AttendanceScreen() {
           ) : (
             visibleStudents.map(student => (
               <div key={student.id} className="card">
-                <p className="quick-action-title" style={{ fontSize: 17 }}>{student.fullName}</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  {student.photoUrl
+                    ? <img src={student.photoUrl} alt="" className="avatar" />
+                    : <span className="avatar avatar-placeholder">{student.fullName.charAt(0)}</span>}
+                  <p className="quick-action-title" style={{ fontSize: 17, margin: 0 }}>{student.fullName}</p>
+                </div>
                 <p className="quick-action-subtitle" style={{ marginBottom: 10 }}>{MONTH_NAMES[month - 1]} {year}</p>
 
                 <div style={{ display: 'flex' }}>

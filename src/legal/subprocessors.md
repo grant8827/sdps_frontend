@@ -4,7 +4,7 @@
 
 **Last updated:** October 1, 2026
 
-These are the outside companies involved in running School Drop-off & Pick-up, and what each one receives. **GGHighTech LLC** reviews every vendor before it receives any personal information. Each vendor must protect the information under written terms at least as protective as our own commitments to schools.
+These are the outside companies involved in running SDPMPlus, and what each one receives. **GGHighTech LLC** reviews every vendor before it receives any personal information. Each vendor must protect the information under written terms at least as protective as our own commitments to schools.
 
 ## Current vendors
 

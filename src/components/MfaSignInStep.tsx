@@ -79,7 +79,7 @@ export function MfaSignInStep({ challenge, onSignedIn, onRestart }: {
   return (
     <form onSubmit={submit}>
       <h2 className="form-title">Enter your code</h2>
-      <p className="form-subtitle">Open your authenticator app and enter the 6-digit code for School Drop-off &amp; Pick-up. Lost your phone? Enter one of your recovery codes instead.</p>
+      <p className="form-subtitle">Open your authenticator app and enter the 6-digit code for SDPMPlus. Lost your phone? Enter one of your recovery codes instead.</p>
       <div className="field-group">
         <input
           className="input"

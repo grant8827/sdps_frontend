@@ -1,4 +1,4 @@
-# School Drop-off & Pick-up — Website
+# SDPMPlus — Website
 
 The React web counterpart to `../mobile_app`. Same roles (Parent /
 Teacher / Admin), same screens, same mock data/state/services — ported

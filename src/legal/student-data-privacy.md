@@ -4,7 +4,7 @@
 
 **Last updated:** October 1, 2026 · **Effective:** [EFFECTIVE DATE]
 
-This policy describes how **GGHighTech LLC** handles information about K–12 students in School Drop-off & Pick-up (the "Service"). It applies in addition to our [Privacy Policy](/legal/privacy-policy) and, for students, takes precedence over it.
+This policy describes how **GGHighTech LLC** handles information about K–12 students in SDPMPlus (the "Service"). It applies in addition to our [Privacy Policy](/legal/privacy-policy) and, for students, takes precedence over it.
 
 ## Our commitments
 

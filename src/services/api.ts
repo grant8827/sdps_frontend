@@ -640,11 +640,13 @@ export interface RosterStudent { id: string; fullName: string; photoUrl?: string
 export interface TeacherAttendanceStudent {
   id: string;
   fullName: string;
+  photoUrl?: string;
   records: { date: string; status: 'PRESENT' | 'ABSENT' | 'SICK' | 'SUSPENDED' | 'HOLIDAY'; late: boolean }[];
 }
 export interface MyAttendanceChild {
   id: string;
   fullName: string;
+  photoUrl?: string;
   className?: string;
   teacherName?: string;
   records: { date: string; status: 'PRESENT' | 'ABSENT' | 'SICK' | 'SUSPENDED' | 'HOLIDAY'; late: boolean }[];

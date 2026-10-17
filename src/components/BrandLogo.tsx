@@ -8,7 +8,7 @@ export function BrandLogo({ height = 40 }: { height?: number }) {
   return (
     <img
       src="/sdpmplus-logo.jpg"
-      alt="SDPMPlus — School Drop-off & Pick-up"
+      alt="SDPMPlus"
       className="brand-logo"
       height={height}
       width={Math.round(height * 3)}

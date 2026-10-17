@@ -4,7 +4,7 @@
 
 **Last updated:** October 1, 2026 · **Effective:** [EFFECTIVE DATE]
 
-These Terms govern use of School Drop-off & Pick-up (the "Service"), provided by **GGHighTech LLC** ("we", "us"). By creating or using an account you agree to these Terms. If you use the Service on behalf of a school or district, you confirm you are authorized to accept them for that organization.
+These Terms govern use of SDPMPlus (the "Service"), provided by **GGHighTech LLC** ("we", "us"). By creating or using an account you agree to these Terms. If you use the Service on behalf of a school or district, you confirm you are authorized to accept them for that organization.
 
 A school's or district's signed agreement with us, including our [Data Processing Agreement](/legal/data-processing-agreement), takes precedence over these Terms where they differ.
 

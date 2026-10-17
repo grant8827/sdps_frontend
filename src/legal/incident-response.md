@@ -4,7 +4,7 @@
 
 **Last updated:** October 1, 2026
 
-This page describes how **GGHighTech LLC** responds to security incidents affecting School Drop-off & Pick-up (the "Service"), and what schools and families can expect from us.
+This page describes how **GGHighTech LLC** responds to security incidents affecting SDPMPlus (the "Service"), and what schools and families can expect from us.
 
 ## What counts as an incident
 

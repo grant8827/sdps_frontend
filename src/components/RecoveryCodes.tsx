@@ -13,7 +13,7 @@ export function RecoveryCodes({ codes, onDone, doneLabel = "I've saved these cod
     try { await navigator.clipboard.writeText(text); setCopied(true); } catch { /* clipboard blocked — codes are still on screen */ }
   };
   const download = () => {
-    const url = URL.createObjectURL(new Blob([`School Drop-off & Pick-up recovery codes\nEach code works once.\n\n${text}\n`], { type: 'text/plain' }));
+    const url = URL.createObjectURL(new Blob([`SDPMPlus recovery codes\nEach code works once.\n\n${text}\n`], { type: 'text/plain' }));
     const link = document.createElement('a');
     link.href = url; link.download = 'recovery-codes.txt'; link.click();
     URL.revokeObjectURL(url);

@@ -143,7 +143,12 @@ export function ClassAttendanceScreen() {
       ) : (
         children.map(child => (
           <div key={child.id} className="card">
-            <p className="quick-action-title" style={{ fontSize: 17 }}>{child.fullName}</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              {child.photoUrl
+                ? <img src={child.photoUrl} alt="" className="avatar" />
+                : <span className="avatar avatar-placeholder">{child.fullName.charAt(0)}</span>}
+              <p className="quick-action-title" style={{ fontSize: 17, margin: 0 }}>{child.fullName}</p>
+            </div>
             <p className="quick-action-subtitle" style={{ marginBottom: 10 }}>
               {child.className ? `${child.className}${child.teacherName ? ` · ${child.teacherName}` : ''}` : 'Unassigned'}
               {' — '}{MONTH_NAMES[month - 1]} {year}

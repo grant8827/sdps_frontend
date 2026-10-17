@@ -14,9 +14,8 @@ export default defineConfig({
       },
     },
     fs: {
-      // The repo folder name contains a colon ("school-dropoff:pickup"),
-      // which trips up Vite's strict fs allow-list path matching and
-      // 403s every request in dev. Safe to relax locally.
+      // Keep local development compatible with projects stored on
+      // external volumes, which Vite's strict allow-list can reject.
       strict: false,
     },
   },

@@ -4,7 +4,7 @@
 
 **Last updated:** October 1, 2026 · **Effective:** [EFFECTIVE DATE]
 
-School Drop-off & Pick-up (the "Service") is a website and mobile app operated by **GGHighTech LLC** ("we", "us"). Schools use it to run drop-off, pick-up, attendance and school-to-family messaging. This policy explains what information the Service handles, why, and the choices available to you.
+SDPMPlus (the "Service") is a website and mobile app operated by **GGHighTech LLC** ("we", "us"). Schools use it to run drop-off, pick-up, attendance and school-to-family messaging. This policy explains what information the Service handles, why, and the choices available to you.
 
 Information about **students** is covered in more detail by our [Student Data Privacy Policy](/legal/student-data-privacy), which takes precedence over this policy wherever the two differ.
 

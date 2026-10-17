@@ -4,7 +4,7 @@
 
 **Last updated:** October 1, 2026
 
-This page describes how **GGHighTech LLC** protects School Drop-off & Pick-up (the "Service") and the information schools trust us with.
+This page describes how **GGHighTech LLC** protects SDPMPlus (the "Service") and the information schools trust us with.
 
 ## Access control
 
