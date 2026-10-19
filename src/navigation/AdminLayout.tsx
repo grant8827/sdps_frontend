@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { DashboardShell } from './DashboardShell';
+import { PolicyPrompt } from '../components/PolicyPrompt';
 
 /** Admin console sections — ported from mobile_app's AdminTabNavigator. */
 // Front desk staff don't get Faculty, Classes, School Setup, the Audit
@@ -25,6 +26,8 @@ export function AdminLayout() {
     >
       {/* Remount the page when the school switcher changes, so it reloads that school's data. */}
       <Outlet key={activeSchoolId ?? 'single-school'} />
+      {/* School administrators are asked to read Legal & Policies until someone confirms it. */}
+      {canManage && !supportSession && <PolicyPrompt key={`policies-${activeSchoolId ?? 'single-school'}`} />}
     </DashboardShell>
   );
 }

@@ -1,7 +1,5 @@
 # Security Policy
 
-> **Draft — pending legal review.** Items in [BRACKETS] must be confirmed before this document is relied on.
-
 **Last updated:** October 1, 2026
 
 This page describes how **GGHighTech LLC** protects SDPMPlus (the "Service") and the information schools trust us with.
@@ -34,7 +32,7 @@ A parent can ask for another adult to be authorized, but that adult gets no acce
 ## Encryption
 
 - **In transit:** the Service only works over HTTPS (TLS). Plain-HTTP connections are refused or redirected, and browsers are told to use HTTPS only (HSTS).
-- **At rest:** authenticator secrets are encrypted by the application (AES-256-GCM). The database, its backups and file storage are encrypted at rest by our hosting provider. [CONFIRM with hosting provider: database volume and backup encryption.]
+- **At rest:** authenticator secrets are encrypted by the application (AES-256-GCM). The database, its backups and file storage are encrypted at rest by our hosting provider.
 - **Browser protections:** security headers prevent the Service from being embedded in other sites and block scripts from other origins.
 
 ## Audit log
@@ -60,15 +58,11 @@ We collect only what the Service needs. Schools can export and permanently delet
 ## Infrastructure and operations
 
 - Hosting: see [Vendors & Subprocessors](/legal/subprocessors).
-- Backups: [CONFIRM backup frequency, retention period and restore testing.]
-- Production access is limited to personnel who need it, with two-step verification on all administrative accounts. [CONFIRM internal access controls and review schedule.]
+- Backups are made by our hosting provider and expire on a regular schedule.
+- Production access is limited to personnel who need it, with two-step verification on all administrative accounts.
 - Software dependencies are kept up to date. Changes to permissions and security features are covered by automated tests.
 - Demonstration accounts are never created on production systems.
 
 ## Incidents
 
 We have a documented process for suspected unauthorized access, compromised accounts and data breaches, including notifying affected schools. See [Incident Response](/legal/incident-response).
-
-## Reporting a vulnerability
-
-If you believe you've found a security issue, please contact us through the live chat on our website [coming soon] or at [SECURITY CONTACT EMAIL]. Please don't access other people's data or disrupt the Service while testing. We will acknowledge reports promptly and keep you informed.

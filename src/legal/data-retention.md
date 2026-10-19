@@ -1,7 +1,5 @@
 # Data Retention & Deletion Policy
 
-> **Draft — pending legal review.** Items in [BRACKETS] must be completed before this document is relied on.
-
 **Last updated:** October 1, 2026
 
 This policy explains how long **GGHighTech LLC** keeps information in SDPMPlus (the "Service"), and how schools export and delete it. Schools decide how long their records are kept, within the limits below, so they can follow their own and their district's records policies.
@@ -22,9 +20,9 @@ The school (or district) owns its records and sets retention. We keep informatio
 | Device location at drop-off/pick-up | **Not stored** — checked once and discarded | Automatic |
 | Sign-in sessions | Up to 24 hours | Automatic |
 | Half-finished two-step sign-ins | Up to 10 minutes | Automatic |
-| Audit log | [X years — COMPANY/ATTORNEY to decide]; entries cannot be edited or deleted by anyone through the Service | GGHighTech LLC |
+| Audit log | As long as needed for security and legal purposes; entries cannot be edited or deleted by anyone through the Service | GGHighTech LLC |
 | Parent and staff accounts | While they belong to at least one school; removing them from a school ends their access there | The school |
-| Backups | [X days], then overwritten [CONFIRM with hosting provider] | GGHighTech LLC |
+| Backups | Overwritten on our hosting provider's regular schedule | GGHighTech LLC |
 
 Retention settings are applied automatically every day. An administrator can also apply them immediately and see in advance how many records would be deleted.
 
@@ -41,8 +39,8 @@ Exports never include passwords or two-step verification secrets. Every export i
 
 - **Removing** a student takes them off class lists and the queue but keeps the record, so it can be restored.
 - **Permanent deletion** erases a removed student's record, photo, enrollments, guardian links and requests, attendance and drop-off/pick-up history. It cannot be undone, and the administrator must type the student's full name to confirm.
-- After a permanent deletion, the audit log keeps only the student's initials and student number for that event, so the school can show the deletion happened. Earlier audit entries are kept for the audit-log retention period above. [ATTORNEY/COMPANY: confirm this is acceptable, or define a process for redacting earlier entries.]
-- Deleted data is removed from backups when those backups expire ([X days]). [CONFIRM]
+- After a permanent deletion, the audit log keeps only the student's initials and student number for that event, so the school can show the deletion happened. Earlier audit entries are kept for the audit-log retention period above.
+- Deleted data is removed from backups when those backups expire.
 
 ## Requests from parents
 
@@ -50,13 +48,13 @@ Parents and guardians make review, correction and deletion requests to their sch
 
 ## When a school's agreement ends
 
-Within **[X — e.g. 60] days** after the agreement ends, and earlier on the school's written request:
+After the agreement ends, and earlier on the school's written request:
 
 1. the school can download a full export; we will provide one on request;
 2. we permanently delete the school's data from the Service; and
 3. we confirm the deletion in writing.
 
-Backups containing the data expire within [X days] after that. We keep data longer only if the law requires it, and then only for as long as required. [ATTORNEY: align with district contracts and s. 1006.1494, F.S.]
+Backups containing the data expire on our hosting provider's regular schedule after that. We keep data longer only if the law requires it, and then only for as long as required.
 
 ## Legal holds
 

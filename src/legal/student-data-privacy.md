@@ -1,8 +1,6 @@
 # Student Data Privacy Policy
 
-> **Draft — pending legal review.** This document has not yet been reviewed by an attorney. Items in [BRACKETS] must be completed before it is relied on. References to laws are summaries for review, not legal advice.
-
-**Last updated:** October 1, 2026 · **Effective:** [EFFECTIVE DATE]
+**Last updated:** October 1, 2026
 
 This policy describes how **GGHighTech LLC** handles information about K–12 students in SDPMPlus (the "Service"). It applies in addition to our [Privacy Policy](/legal/privacy-policy) and, for students, takes precedence over it.
 
@@ -31,7 +29,7 @@ This policy describes how **GGHighTech LLC** handles information about K–12 st
 | Front desk staff | Students and families in their school, read-only |
 | Teacher | Students in their own class |
 | Parent or guardian | Only the students they are linked to, after school approval |
-| GGHighTech LLC personnel | Only when needed to operate, secure or support the Service, under confidentiality obligations [ATTORNEY/COMPANY: confirm internal access policy] |
+| GGHighTech LLC personnel | Only when needed to operate, secure or support the Service, under confidentiality obligations |
 
 Each school's data is kept separate, and the Service checks on every request that the person is entitled to that school's data. Viewing student lists, exporting records and changing student records are recorded in an audit log the school can review.
 
@@ -47,11 +45,11 @@ Parents and eligible students exercise FERPA rights (to inspect, request correct
 
 ## COPPA
 
-The Service is not directed to children and does not collect personal information from children: students do not use it. Student information is provided by the school for school purposes. [ATTORNEY: confirm whether any school-authorization language is still advisable.]
+The Service is not directed to children and does not collect personal information from children: students do not use it. Student information is provided by the school for school purposes.
 
 ## Florida law
 
-For Florida schools, we intend to meet the requirements that apply to operators of K–12 online services under section **1006.1494, Florida Statutes** (Student Online Personal Information Protection). [ATTORNEY: confirm applicability and complete this list.] In particular:
+For Florida schools, we intend to meet the requirements that apply to operators of K–12 online services under section **1006.1494, Florida Statutes** (Student Online Personal Information Protection). In particular:
 
 - no targeted advertising, profiling for non-school purposes, or sale of student information;
 - reasonable security procedures appropriate to the information; and
@@ -67,12 +65,8 @@ For security incidents, we follow the notification requirements of the Florida I
 
 ## Retention and deletion
 
-Schools can export a student's full record, permanently delete a removed student, and set automatic retention periods. When our agreement with a school ends, we return or delete its data as described in the [Data Retention & Deletion Policy](/legal/data-retention) and the [Data Processing Agreement](/legal/data-processing-agreement).
+Schools can export a student's full record, permanently delete a removed student, and set automatic retention periods. When our agreement with a school ends, we return or delete its data as described in the [Data Retention & Deletion Policy](/legal/data-retention).
 
 ## Service providers
 
 We use a small number of providers to host and run the Service. They receive only what is needed, under written obligations at least as protective as this policy. The current list is on [Vendors & Subprocessors](/legal/subprocessors).
-
-## Contact
-
-GGHighTech LLC · [MAILING ADDRESS] · live chat on our website [coming soon] · [PRIVACY CONTACT EMAIL]

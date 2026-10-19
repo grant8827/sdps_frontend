@@ -1,8 +1,6 @@
 # Privacy Policy
 
-> **Draft — pending legal review.** This document has not yet been reviewed by an attorney. Items in [BRACKETS] must be completed before it is relied on.
-
-**Last updated:** October 1, 2026 · **Effective:** [EFFECTIVE DATE]
+**Last updated:** October 1, 2026
 
 SDPMPlus (the "Service") is a website and mobile app operated by **GGHighTech LLC** ("we", "us"). Schools use it to run drop-off, pick-up, attendance and school-to-family messaging. This policy explains what information the Service handles, why, and the choices available to you.
 
@@ -56,7 +54,7 @@ Schools control how long their records are kept, and can export or permanently d
 
 - **Parents and guardians** may ask their school to review, correct or delete information about themselves or their child. Because the school controls these records, we will direct requests we receive to the school and help the school respond.
 - **Account holders** can turn on two-step verification, change their password and manage location permission at any time.
-- Depending on where you live, you may have additional rights under state law. [ATTORNEY: confirm which state privacy laws apply.]
+- Depending on where you live, you may have additional rights under state law.
 
 ## Children
 
@@ -65,9 +63,3 @@ Students do not create accounts or use the Service. Information about students i
 ## Changes to this policy
 
 If we make material changes, we will notify schools before the change takes effect and update the date above.
-
-## Contact
-
-GGHighTech LLC · [MAILING ADDRESS]
-
-Questions or requests: use the live chat on our website [LIVE CHAT — coming soon] or write to [PRIVACY CONTACT EMAIL].

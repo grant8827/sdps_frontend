@@ -1,12 +1,10 @@
 # Terms of Service
 
-> **Draft — pending legal review.** This document has not yet been reviewed by an attorney. Items in [BRACKETS] must be completed before it is relied on.
-
-**Last updated:** October 1, 2026 · **Effective:** [EFFECTIVE DATE]
+**Last updated:** October 1, 2026
 
 These Terms govern use of SDPMPlus (the "Service"), provided by **GGHighTech LLC** ("we", "us"). By creating or using an account you agree to these Terms. If you use the Service on behalf of a school or district, you confirm you are authorized to accept them for that organization.
 
-A school's or district's signed agreement with us, including our [Data Processing Agreement](/legal/data-processing-agreement), takes precedence over these Terms where they differ.
+A school's or district's signed agreement with us takes precedence over these Terms where they differ.
 
 ## 1. The Service
 
@@ -42,7 +40,7 @@ We may suspend accounts that break these rules or put students or the Service at
 
 ## 6. Fees
 
-[COMPANY: describe pricing, billing period, payment terms, taxes and renewal, or reference the order form.]
+Plans and prices are shown on our [Pricing](/pricing) page. A school's current plan, price and invoices are under Upgrade Plan in its dashboard.
 
 ## 7. Intellectual property
 
@@ -52,22 +50,6 @@ We own the Service and its software. Schools and users own their content. You gi
 
 A school may stop using the Service as set out in its agreement. We may suspend or end access for serious or repeated breaches of these Terms. When a school's agreement ends, we return or delete its data as described in the [Data Retention & Deletion Policy](/legal/data-retention).
 
-## 9. Disclaimers
-
-[ATTORNEY: standard "as is" disclaimer, limited as required by law and by any school/district contract.]
-
-## 10. Limitation of liability
-
-[ATTORNEY: liability cap and exclusions. Many school districts require specific terms, insurance and indemnities; reconcile with the district agreement.]
-
-## 11. Governing law
-
-These Terms are governed by the laws of the State of [STATE — e.g. Florida], without regard to conflict-of-law rules. [ATTORNEY: venue; public-entity customers may require their own state's law.]
-
-## 12. Changes
+## 9. Changes
 
 If we change these Terms materially, we will notify schools in advance and update the date above. Continued use after the effective date means acceptance.
-
-## 13. Contact
-
-GGHighTech LLC · [MAILING ADDRESS] · live chat on our website [coming soon] · [CONTACT EMAIL]

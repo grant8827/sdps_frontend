@@ -181,6 +181,10 @@ export const api = {
     request<{ promoted: number; skipped: number }>('/admin/promotions/by-grade', { method: 'POST', body: JSON.stringify(input) }, token),
   promoteByClass: (token: string, input: { fromClassId: string; toClassId: string; teacherUserId?: string }) =>
     request<{ promoted: number; skipped: number; sameYear: boolean }>('/admin/promotions/by-class', { method: 'POST', body: JSON.stringify(input) }, token),
+  /** The latest confirmation that an administrator read the Legal & Policies documents. */
+  policyAcknowledgment: (token: string) => request<{ acknowledgment: PolicyAcknowledgment | null }>('/admin/policies/acknowledgment', {}, token),
+  acknowledgePolicies: (token: string, input: { version: string; documents: { slug: string; title: string; updated: string | null }[] }) =>
+    request<{ acknowledgment: PolicyAcknowledgment }>('/admin/policies/acknowledgment', { method: 'POST', body: JSON.stringify(input) }, token),
   /** The open request to delete this school (Profile → Delete school account), if any. */
   schoolDeletionRequest: (token: string) => request<{ request: SchoolDeletionRequest | null }>('/admin/school/deletion-request', {}, token),
   requestSchoolDeletion: (token: string, input: { confirmName: string; password: string; reason?: string }) =>
@@ -404,6 +408,8 @@ export interface PlatformSchoolDetail {
   admins: { id: string; fullName: string; email: string; accountActive: boolean; status: string; mfaEnabled: boolean; needsSetup: boolean }[];
   activeYear: { id: string; name: string } | null;
   setup: { key: string; label: string; done: boolean }[];
+  /** Each time an administrator confirmed reading the legal and policy documents, newest first. */
+  policyAcknowledgments: { id: string; userName: string; acknowledgedAt: string; documents: { slug: string; title: string; updated: string | null }[] }[];
 }
 export interface PlatformAuditEntry {
   id: string; createdAt: string; schoolId: string | null; schoolName: string | null; actorId: string | null; actorName: string | null; actorRole: string | null;
@@ -490,6 +496,7 @@ export interface PlatformSubscriptionRequest extends SubscriptionRequest {
 }
 export interface PublicPlan extends PlanTerms { id: string; name: string; description: string | null; currency: string }
 export interface SchoolPlanOption extends PlanTerms { id: string; name: string; description: string | null; currency: string; current: boolean; recommended: boolean; tooSmall: boolean }
+export interface PolicyAcknowledgment { version: string; userName: string; acknowledgedAt: string }
 export interface SchoolDeletionRequest {
   id: string; status: 'REQUESTED' | 'UNDER_REVIEW' | 'APPROVED' | 'PROCESSING'; createdAt: string; dueAt: string; requesterName: string;
   /** Still being reviewed, so the school can withdraw it. */

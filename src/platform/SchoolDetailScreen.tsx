@@ -153,6 +153,21 @@ export function SchoolDetailScreen() {
             </ul>
             <p className="field-label" style={{ margin: 0 }}>Time zone: {school.timezone}{school.activeYear ? ` · School year ${school.activeYear.name}` : ''}</p>
           </div>
+          <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <p className="form-title" style={{ margin: 0 }}>Legal &amp; Policies</p>
+            {school.policyAcknowledgments.length === 0
+              ? <p style={{ margin: 0, fontSize: 14, color: 'var(--amber-text)' }}>No administrator has confirmed reading the legal and policy documents yet.</p>
+              : (
+                <ul style={{ margin: 0, paddingLeft: 18, fontSize: 14, display: 'grid', gap: 6 }}>
+                  {school.policyAcknowledgments.map(ack => (
+                    <li key={ack.id}>
+                      Confirmed by <strong>{ack.userName}</strong> on {new Date(`${ack.acknowledgedAt.replace(' ', 'T')}Z`).toLocaleString()}
+                      <span className="field-label" style={{ display: 'block', margin: 0 }}>{ack.documents.map(doc => `${doc.title}${doc.updated ? ` (${doc.updated})` : ''}`).join(', ')}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+          </div>
         </>
       )}
 

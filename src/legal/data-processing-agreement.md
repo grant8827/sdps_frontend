@@ -1,7 +1,5 @@
 # Data Processing Agreement (Template)
 
-> **Draft template — pending legal review.** This is a starting point for an agreement between GGHighTech LLC and a school or district. It must be reviewed by an attorney and completed before signature. Many districts have their own required data privacy agreement (for example a state or consortium standard form); where a district's form is used, it governs.
-
 **Version:** October 1, 2026
 
 This Data Processing Agreement ("Agreement") is between **[SCHOOL OR DISTRICT NAME]** (the "School") and **GGHighTech LLC**, a [STATE] limited liability company (the "Provider"). It applies to the Provider's SDPMPlus service (the "Service").
