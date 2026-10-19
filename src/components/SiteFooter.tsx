@@ -5,8 +5,9 @@ import { BrandLogo } from './BrandLogo';
 
 interface FooterLink { label: string; to: string }
 
-const legalLinks = (group: 'legal' | 'trust'): FooterLink[] =>
-  LEGAL_DOCUMENTS.filter(doc => doc.group === group).map(doc => ({ label: doc.title, to: `/legal/${doc.slug}` }));
+// Only a few policies are in the footer; schools find every document
+// under Legal & Policies in their dashboard.
+const legalLinks: FooterLink[] = LEGAL_DOCUMENTS.filter(doc => doc.footer).map(doc => ({ label: doc.title, to: `/legal/${doc.slug}` }));
 
 function FooterColumn({ title, links }: { title: string; links: FooterLink[] }) {
   return (
@@ -26,9 +27,8 @@ function FooterColumn({ title, links }: { title: string; links: FooterLink[] }) 
 
 /**
  * Footer for the public pages (home, sign-in, register, legal pages) in
- * columns: brand, Product (or, when signed in, your account), Legal, and
- * Trust & Security, over a bottom bar with the copyright. Not shown
- * inside the dashboards.
+ * columns: brand, Product (or, when signed in, your account) and Legal,
+ * over a bottom bar with the copyright. Not shown inside the dashboards.
  */
 export function SiteFooter() {
   const { user } = useAuth();
@@ -41,8 +41,6 @@ export function SiteFooter() {
       { label: 'How it works', to: '/#how-it-works' },
       { label: 'Safety & privacy', to: '/#safety' },
       { label: 'Pricing', to: '/pricing' },
-      { label: "Who it's for", to: '/#roles' },
-      { label: 'Log in', to: '/login' },
       { label: 'Register your school', to: '/register' },
     ];
 
@@ -59,8 +57,7 @@ export function SiteFooter() {
           <p className="footer-trust">🔒 Built for student privacy: no ads, no selling data.</p>
         </div>
         <FooterColumn title={user ? 'Your account' : 'Product'} links={product} />
-        <FooterColumn title="Legal" links={legalLinks('legal')} />
-        <FooterColumn title="Trust & Security" links={legalLinks('trust')} />
+        <FooterColumn title="Legal" links={legalLinks} />
       </div>
       <div className="footer-bottom">
         <p className="footer-copy">© {year} sdpmplus.com | All rights reserved.</p>

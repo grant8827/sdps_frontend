@@ -37,6 +37,7 @@ import { SecurityScreen } from './screens/shared/SecurityScreen';
 import { ProfileScreen } from './screens/shared/ProfileScreen';
 import { DataPrivacyScreen } from './screens/admin/DataPrivacyScreen';
 import { SubscriptionScreen } from './screens/admin/SubscriptionScreen';
+import { LegalDocumentsScreen } from './screens/admin/LegalDocumentsScreen';
 import { ChoosePlanScreen } from './screens/admin/ChoosePlanScreen';
 import { justRegistered } from './utils/onboarding';
 import { DistrictOverviewScreen } from './screens/admin/DistrictOverviewScreen';
@@ -182,6 +183,8 @@ function AppRoutes() {
           <Route path="audit-log" element={<AuditLogScreen />} />
           <Route path="data" element={<DataPrivacyScreen />} />
           <Route path="subscription" element={<SubscriptionScreen />} />
+          <Route path="legal" element={<LegalDocumentsScreen />} />
+          <Route path="legal/:slug" element={<LegalDocumentsScreen />} />
           <Route path="choose-plan" element={<ChoosePlanScreen />} />
           <Route path="district" element={<DistrictOverviewScreen />} />
           <Route path="security" element={<SecurityScreen />} />

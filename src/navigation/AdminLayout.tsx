@@ -20,6 +20,7 @@ export function AdminLayout() {
         { to: '/admin/students', label: 'Students' },
         { to: '/admin/notices', label: 'Messages' },
         ...(canManageSchool ? [{ to: '/admin/setup', label: 'School Setup' }, { to: '/admin/audit-log', label: 'Audit Log' }, { to: '/admin/data', label: 'Data & Privacy' }] : []),
+        { to: '/admin/legal', label: 'Legal & Policies' },
       ]}
     >
       {/* Remount the page when the school switcher changes, so it reloads that school's data. */}
