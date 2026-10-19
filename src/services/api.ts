@@ -180,7 +180,9 @@ export const api = {
   promoteByGrade: (token: string, input: { fromSchoolYearId: string; toSchoolYearId: string; fromGradeLevelId: string; toGradeLevelId: string; teacherUserId?: string }) =>
     request<{ promoted: number; skipped: number }>('/admin/promotions/by-grade', { method: 'POST', body: JSON.stringify(input) }, token),
   promoteByClass: (token: string, input: { fromClassId: string; toClassId: string; teacherUserId?: string }) =>
-    request<{ promoted: number; skipped: number }>('/admin/promotions/by-class', { method: 'POST', body: JSON.stringify(input) }, token),
+    request<{ promoted: number; skipped: number; sameYear: boolean }>('/admin/promotions/by-class', { method: 'POST', body: JSON.stringify(input) }, token),
+  /** Creates next school year (in planning), or returns the one already planned. */
+  createNextSchoolYear: (token: string) => request<{ id: string; name: string; created: boolean }>('/admin/school-years/next', { method: 'POST' }, token),
   activateSchoolYear: (token: string, schoolYearId: string) =>
     request<void>(`/admin/school-years/${schoolYearId}/activate`, { method: 'POST' }, token),
   guardians: (token: string) => request<Guardian[]>('/admin/guardians', {}, token),

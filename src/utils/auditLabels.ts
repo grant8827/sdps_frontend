@@ -65,6 +65,7 @@ export const ACTION_LABELS: Record<string, string> = {
   CLASS_CREATED: 'Added class',
   PROMOTION_RUN: 'Ran grade promotion',
   SCHOOL_YEAR_ACTIVATED: 'Activated school year',
+  SCHOOL_YEAR_CREATED: 'Created next school year',
   SUPPORT_SESSION_STARTED: 'Started a support session',
   SUPPORT_SESSION_ENDED: 'Ended a support session',
   SUPPORT_VIEWED: 'Viewed a page in a support session',
