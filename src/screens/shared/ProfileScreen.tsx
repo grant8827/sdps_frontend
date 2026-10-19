@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { PasswordInput } from '../../components/PasswordInput';
+import { DeleteSchoolCard } from '../../components/DeleteSchoolCard';
 import { Screen } from '../../components/Screen';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
@@ -13,7 +14,7 @@ const ROLE_LABEL: Record<string, string> = { parent: 'Parent', teacher: 'Teacher
  * for parents, the pickup PIN — are on the Security page.
  */
 export function ProfileScreen() {
-  const { token, user, schools, supportSession } = useAuth();
+  const { token, user, schools, supportSession, canManageSchool } = useAuth();
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -69,6 +70,9 @@ export function ProfileScreen() {
       <p className="field-label" style={{ margin: 0 }}>
         Two-step verification{user?.role === 'parent' ? ' and your pickup PIN are' : ' is'} on the <Link to={securityPath}>Security</Link> page.
       </p>
+
+      {/* Only a school's own administrator, never during a platform support session. */}
+      {user?.role === 'admin' && canManageSchool && !supportSession && <DeleteSchoolCard />}
     </Screen>
   );
 }

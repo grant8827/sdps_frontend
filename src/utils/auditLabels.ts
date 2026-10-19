@@ -89,6 +89,7 @@ export const ACTION_LABELS: Record<string, string> = {
   DATA_REQUEST_UNDER_REVIEW: 'Started reviewing a data request',
   DATA_REQUEST_APPROVED: 'Approved a data request',
   DATA_REQUEST_REJECTED: 'Rejected a data request',
+  DATA_REQUEST_WITHDRAWN: 'Withdrew a data request',
   DATA_REQUEST_PROCESSING: 'Started carrying out a data request',
   DATA_REQUEST_COMPLETED: 'Completed a data request',
   DATA_EXPORTED: 'Downloaded a data export',

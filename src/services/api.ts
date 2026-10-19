@@ -181,6 +181,11 @@ export const api = {
     request<{ promoted: number; skipped: number }>('/admin/promotions/by-grade', { method: 'POST', body: JSON.stringify(input) }, token),
   promoteByClass: (token: string, input: { fromClassId: string; toClassId: string; teacherUserId?: string }) =>
     request<{ promoted: number; skipped: number; sameYear: boolean }>('/admin/promotions/by-class', { method: 'POST', body: JSON.stringify(input) }, token),
+  /** The open request to delete this school (Profile → Delete school account), if any. */
+  schoolDeletionRequest: (token: string) => request<{ request: SchoolDeletionRequest | null }>('/admin/school/deletion-request', {}, token),
+  requestSchoolDeletion: (token: string, input: { confirmName: string; password: string; reason?: string }) =>
+    request<{ request: SchoolDeletionRequest }>('/admin/school/deletion-request', { method: 'POST', body: JSON.stringify(input) }, token),
+  withdrawSchoolDeletion: (token: string) => request<void>('/admin/school/deletion-request/withdraw', { method: 'POST' }, token),
   /** Creates next school year (in planning), or returns the one already planned. */
   createNextSchoolYear: (token: string) => request<{ id: string; name: string; created: boolean }>('/admin/school-years/next', { method: 'POST' }, token),
   activateSchoolYear: (token: string, schoolYearId: string) =>
@@ -485,6 +490,11 @@ export interface PlatformSubscriptionRequest extends SubscriptionRequest {
 }
 export interface PublicPlan extends PlanTerms { id: string; name: string; description: string | null; currency: string }
 export interface SchoolPlanOption extends PlanTerms { id: string; name: string; description: string | null; currency: string; current: boolean; recommended: boolean; tooSmall: boolean }
+export interface SchoolDeletionRequest {
+  id: string; status: 'REQUESTED' | 'UNDER_REVIEW' | 'APPROVED' | 'PROCESSING'; createdAt: string; dueAt: string; requesterName: string;
+  /** Still being reviewed, so the school can withdraw it. */
+  canWithdraw: boolean;
+}
 export interface SchoolSubscriptionView {
   subscription: {
     status: 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELED'; planId: string; planName: string; studentLimit: number | null; customPricing: boolean;
