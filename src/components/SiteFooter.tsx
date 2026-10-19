@@ -1,13 +1,26 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { COMPANY_NAME, LEGAL_DOCUMENTS } from '../legal/documents';
+import { COMPANY_NAME } from '../legal/documents';
 import { BrandLogo } from './BrandLogo';
 
 interface FooterLink { label: string; to: string }
 
-// Only a few policies are in the footer; schools find every document
-// under Legal & Policies in their dashboard.
-const legalLinks: FooterLink[] = LEGAL_DOCUMENTS.filter(doc => doc.footer).map(doc => ({ label: doc.title, to: `/legal/${doc.slug}` }));
+// The app store pages. Paste each link in when the app is published;
+// until then the name shows as plain text.
+const APP_STORE_URL = '';
+const GOOGLE_PLAY_URL = '';
+const APPS = [
+  { label: 'iPhone — App Store', url: APP_STORE_URL },
+  { label: 'Android — Google Play', url: GOOGLE_PLAY_URL },
+];
+
+// The legal and policy documents aren't in the footer: schools read them
+// under Legal & Policies in their dashboard (they stay at /legal/<slug>).
+const FOR_SCHOOLS: FooterLink[] = [
+  { label: 'Register your school', to: '/register' },
+  { label: 'Pricing', to: '/pricing' },
+  { label: 'Already a school? Sign in', to: '/login' },
+];
 
 function FooterColumn({ title, links }: { title: string; links: FooterLink[] }) {
   return (
@@ -25,10 +38,28 @@ function FooterColumn({ title, links }: { title: string; links: FooterLink[] }) 
   );
 }
 
+function AppsColumn() {
+  return (
+    <div className="footer-column">
+      <p className="footer-heading">Get the app</p>
+      <ul>
+        {APPS.map(app => (
+          <li key={app.label}>
+            {app.url
+              ? <a href={app.url} target="_blank" rel="noopener noreferrer">{app.label}</a>
+              : <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>{app.label}</span>}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 /**
  * Footer for the public pages (home, sign-in, register, legal pages) in
- * columns: brand, Product (or, when signed in, your account) and Legal,
- * over a bottom bar with the copyright. Not shown inside the dashboards.
+ * columns: brand, Product and For schools (or, when signed in, your
+ * account), and Get the app, over a bottom bar with the copyright. Not
+ * shown inside the dashboards.
  */
 export function SiteFooter() {
   const { user } = useAuth();
@@ -40,8 +71,6 @@ export function SiteFooter() {
       { label: 'Features', to: '/#features' },
       { label: 'How it works', to: '/#how-it-works' },
       { label: 'Safety & privacy', to: '/#safety' },
-      { label: 'Pricing', to: '/pricing' },
-      { label: 'Register your school', to: '/register' },
     ];
 
   return (
@@ -57,7 +86,8 @@ export function SiteFooter() {
           <p className="footer-trust">🔒 Built for student privacy: no ads, no selling data.</p>
         </div>
         <FooterColumn title={user ? 'Your account' : 'Product'} links={product} />
-        <FooterColumn title="Legal" links={legalLinks} />
+        {!user && <FooterColumn title="For schools" links={FOR_SCHOOLS} />}
+        <AppsColumn />
       </div>
       <div className="footer-bottom">
         <p className="footer-copy">© {year} sdpmplus.com | All rights reserved.</p>
