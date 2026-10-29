@@ -149,7 +149,7 @@ export function SchoolSetupScreen() {
       // avoids a flash/disappearance while a newly signed S3 URL propagates;
       // the next visit uses the saved URL returned by the server.
       setLogoPreview(logoDataUrl || null);
-      if (logoDataUrl && !updated?.school.logoUrl) throw new Error('The server accepted the upload but did not return the saved logo. Restart the backend and try again.');
+      if (logoDataUrl && !updated?.school.logoUrl) throw new Error('Your logo was uploaded but could not be shown yet. Please refresh the page and try again.');
       setMessage(logoDataUrl ? 'Logo saved.' : 'Logo removed.');
     } catch (error) {
       setLogoPreview(null);

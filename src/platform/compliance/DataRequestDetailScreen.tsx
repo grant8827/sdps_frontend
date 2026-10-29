@@ -61,7 +61,7 @@ export function DataRequestDetailScreen() {
 
   const loggedByMe = request.createdById === user?.id;
   const automatedDeletion = request.kind === 'DELETION' && request.subjectType === 'STUDENT';
-  const automatedExport = request.kind === 'EXPORT' && request.subjectType !== 'PARENT';
+  const automatedExport = request.kind === 'EXPORT' && (request.subjectType === 'STUDENT' || request.subjectType === 'SCHOOL');
   const stepIndex = STEPS.indexOf(request.status);
 
   return (

@@ -42,6 +42,7 @@ import { ChoosePlanScreen } from './screens/admin/ChoosePlanScreen';
 import { justRegistered } from './utils/onboarding';
 import { DistrictOverviewScreen } from './screens/admin/DistrictOverviewScreen';
 import { LegalPage } from './legal/LegalPage';
+import { DeleteAccountPage } from './legal/DeleteAccountPage';
 
 import { PlatformLayout } from './platform/PlatformLayout';
 import { SchoolsScreen } from './platform/SchoolsScreen';
@@ -91,6 +92,7 @@ function AppRoutes() {
         <Route path="/set-password" element={<SetPasswordScreen />} />
         <Route path="/set-pin" element={<SetPinScreen />} />
         <Route path="/legal/:slug" element={<LegalPage />} />
+        <Route path="/delete-account" element={<DeleteAccountPage />} />
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
@@ -117,6 +119,7 @@ function AppRoutes() {
       <Route path="/set-password" element={<SetPasswordScreen />} />
       <Route path="/set-pin" element={<SetPinScreen />} />
       <Route path="/legal/:slug" element={<LegalPage />} />
+      <Route path="/delete-account" element={<DeleteAccountPage />} />
 
       {user.role === 'parent' && (
         <Route path="/parent" element={<ParentLayout />}>

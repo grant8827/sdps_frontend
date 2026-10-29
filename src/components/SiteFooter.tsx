@@ -50,6 +50,7 @@ function AppsColumn() {
               : <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>{app.label}</span>}
           </li>
         ))}
+        <li><Link to="/delete-account">Delete your account</Link></li>
       </ul>
     </div>
   );

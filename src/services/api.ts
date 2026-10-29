@@ -95,6 +95,8 @@ export class ApiError extends Error {
 
 export const api = {
   forgotPassword: (email: string) => request<{ message: string }>('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
+  requestAccountDeletion: (input: { identifier: string; password: string; reason?: string }) =>
+    request<{ alreadyRequested: boolean; dueAt: string }>('/account/deletion-request', { method: 'POST', body: JSON.stringify(input) }),
   checkAccountLink: (token: string) =>
     request<{ purpose: 'INVITE' | 'RESET' | 'PIN_RESET'; fullName: string; email: string }>('/auth/account-link', { method: 'POST', body: JSON.stringify({ token }) }),
   setPassword: (token: string, password: string) => request<{ email: string }>('/auth/set-password', { method: 'POST', body: JSON.stringify({ token, password }) }),
@@ -449,7 +451,7 @@ export interface SecurityEvent {
 }
 export type DataRequestStatus = 'REQUESTED' | 'UNDER_REVIEW' | 'APPROVED' | 'PROCESSING' | 'COMPLETED' | 'REJECTED';
 export interface DataRequest {
-  id: string; schoolId: string; schoolName: string; kind: 'EXPORT' | 'DELETION'; subjectType: 'STUDENT' | 'PARENT' | 'SCHOOL'; subjectId: string | null;
+  id: string; schoolId: string; schoolName: string; kind: 'EXPORT' | 'DELETION'; subjectType: 'STUDENT' | 'PARENT' | 'SCHOOL' | 'ACCOUNT'; subjectId: string | null;
   subjectLabel: string; requesterName: string; requesterRelationship: string | null; receivedVia: string | null; details: string | null;
   status: DataRequestStatus; statusNote: string | null; dueAt: string; createdAt: string; updatedAt: string; completedAt: string | null;
   outcome: { erased?: Record<string, number>; kept?: string[] } | null; createdBy: string; createdById: string; approvedBy: string | null;

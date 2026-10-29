@@ -1,7 +1,7 @@
 import type { DataRequestStatus } from '../../services/api';
 
 export const KIND_LABEL = { EXPORT: 'Export', DELETION: 'Deletion' } as const;
-export const SUBJECT_LABEL = { STUDENT: 'Student', PARENT: 'Parent or guardian', SCHOOL: 'Whole school' } as const;
+export const SUBJECT_LABEL = { STUDENT: 'Student', PARENT: 'Parent or guardian', SCHOOL: 'Whole school', ACCOUNT: 'User account' } as const;
 export const STATUS_LABEL: Record<DataRequestStatus, string> = {
   REQUESTED: 'Requested', UNDER_REVIEW: 'Under review', APPROVED: 'Approved', PROCESSING: 'Processing', COMPLETED: 'Completed', REJECTED: 'Rejected',
 };
