@@ -13,8 +13,8 @@ type Mode = 'idle' | 'enrolling' | 'newCodes' | 'disabling';
 /**
  * Security (every role): two-step verification status for this account.
  * Teachers and parents can turn it on (and off again, with their
- * password); for admin-dashboard accounts it's required, so it can't be
- * turned off here. Anyone with it on can replace their recovery codes.
+ * password). Admin-dashboard accounts have it on by default and can turn
+ * it off here too, with a warning; platform admins can't turn it off. Anyone with it on can replace their recovery codes.
  * Parents also manage their pickup PIN here.
  */
 export function SecurityScreen() {
@@ -91,6 +91,7 @@ export function SecurityScreen() {
           ))}
           {mode === 'disabling' && (
             <>
+              {status.defaultOn && <p style={{ margin: 0, fontSize: 14, color: 'var(--red)' }}>Two-step verification is recommended for school accounts. Without it, anyone who learns your password can sign in and see your school's student and family information.</p>}
               <p className="field-label" style={{ margin: 0 }}>Enter your password to turn off two-step verification:</p>
               <PasswordInput value={input} onChange={e => setInput(e.target.value)} placeholder="Password" autoComplete="current-password" />
               <div className="btn-row">

@@ -766,7 +766,15 @@ export interface RetentionSettings {
   wouldDeleteNow: { removedStudents: number; pickupHistory: number };
 }
 export interface MfaEnrollment { secret: string; otpauthUri: string }
-export interface MfaStatus { enabled: boolean; enabledAt: string | null; required: boolean; recoveryCodesLeft: number }
+export interface MfaStatus {
+  enabled: boolean;
+  enabledAt: string | null;
+  /** Can't be turned off (platform admins). */
+  required: boolean;
+  /** On by default for this account (admin dashboard); it can still be turned off. */
+  defaultOn?: boolean;
+  recoveryCodesLeft: number;
+}
 export interface StaffRow {
   id: string;
   fullName: string;
