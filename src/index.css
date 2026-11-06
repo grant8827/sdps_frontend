@@ -160,7 +160,7 @@ a {
   flex: 1;
   min-width: 0;
   width: 100%;
-  max-width: 960px;
+  max-width: 1440px;
 }
 
 /* ---- Sidebar (web dashboard nav) ---- */
@@ -567,6 +567,11 @@ a.btn {
 
 .data-table tbody tr:hover {
   background: var(--chip-bg);
+}
+
+.data-table .wrap-cell {
+  white-space: normal;
+  min-width: 180px;
 }
 
 .data-table .actions-cell {

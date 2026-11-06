@@ -13,6 +13,19 @@ type Tab = 'list' | 'register' | 'approvals';
  * linked to a parent from the Students tab's registration form. A new
  * parent gets an email link to choose their own password.
  */
+/**
+ * A parent added by another parent shows as "Pending approval" until an
+ * admin approves them in Pending Approvals (an existing parent with
+ * children already approved stays "Active").
+ */
+function ParentStatusPill({ guardian }: { guardian: Guardian }) {
+  if (!guardian.active) return <span className="pill" style={{ backgroundColor: 'var(--red)' }}>Suspended</span>;
+  if (guardian.children.length === 0 && guardian.pendingChildren?.length) {
+    return <span className="pill" style={{ backgroundColor: 'var(--amber)', color: 'var(--on-amber)' }}>Pending approval</span>;
+  }
+  return <span className="pill" style={{ backgroundColor: 'var(--green)' }}>Active</span>;
+}
+
 export function FamilyManagementScreen() {
   const { token, canManageSchool } = useAuth();
   const [tab, setTab] = useState<Tab>('list');
@@ -27,7 +40,12 @@ export function FamilyManagementScreen() {
   const load = async () => {
     if (!token) return;
     setGuardians(await api.guardians(token));
-    if (canManageSchool) setRequests(await api.guardianRequests(token));
+    if (canManageSchool) {
+      const latest = await api.guardianRequests(token);
+      setRequests(latest);
+      // Keeps the sidebar's Families count in step (see AdminLayout).
+      window.dispatchEvent(new CustomEvent('pending-approvals', { detail: latest.filter(r => r.status === 'PENDING').length }));
+    }
   };
   const pendingCount = requests.filter(r => r.status === 'PENDING').length;
   useEffect(() => { load().catch(error => setMessage(error.message)); }, [token]);
@@ -65,7 +83,7 @@ export function FamilyManagementScreen() {
   return (
     <Screen title="Families" subtitle="Register parents and manage their accounts.">
       <div className="subtabs">
-        <button type="button" className={`subtab${tab === 'list' ? ' subtab-active' : ''}`} onClick={() => setTab('list')}>Parents</button>
+        <button type="button" className={`subtab${tab === 'list' ? ' subtab-active' : ''}`} onClick={() => setTab('list')}>Parents{guardians.length > 0 ? ` (${guardians.length})` : ''}</button>
         {canManageSchool && <button type="button" className={`subtab${tab === 'register' ? ' subtab-active' : ''}`} onClick={() => setTab('register')}>Add Parent</button>}
         {canManageSchool && (
           <button type="button" className={`subtab${tab === 'approvals' ? ' subtab-active' : ''}`} onClick={() => setTab('approvals')}>
@@ -101,8 +119,14 @@ export function FamilyManagementScreen() {
                   <td>{guardian.fullName}</td>
                   <td>{guardian.email}</td>
                   <td>{guardian.phone || '—'}</td>
-                  <td>{guardian.children.length ? guardian.children.map(c => c.fullName).join(', ') : 'None linked'}</td>
-                  <td><span className="pill" style={{ backgroundColor: guardian.active ? 'var(--green)' : 'var(--red)' }}>{guardian.active ? 'Active' : 'Suspended'}</span></td>
+                  <td className="wrap-cell">
+                    {guardian.children.length > 0 && guardian.children.map(c => c.fullName).join(', ')}
+                    {!!guardian.pendingChildren?.length && (
+                      <div style={{ color: 'var(--amber-text)' }}>Pending: {guardian.pendingChildren.map(c => c.fullName).join(', ')}</div>
+                    )}
+                    {guardian.children.length === 0 && !guardian.pendingChildren?.length && 'None linked'}
+                  </td>
+                  <td><ParentStatusPill guardian={guardian} /></td>
                   <td className="actions-cell">
                     {canManageSchool ? (
                       <>

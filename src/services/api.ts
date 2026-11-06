@@ -236,7 +236,7 @@ export const api = {
   sentNotices: (token: string) => request<SentNotice[]>('/notices/sent', {}, token),
   markNoticeRead: (token: string, noticeId: string) => request<void>(`/notices/${noticeId}/read`, { method: 'POST' }, token),
   inviteGuardian: (token: string, input: { fullName: string; email: string; phone?: string; relationship: string }) =>
-    request<{ id: string; status: 'PENDING' } & InviteResult>('/me/guardians', { method: 'POST', body: JSON.stringify(input) }, token),
+    request<{ id: string; status: 'PENDING'; existingAccount?: boolean; fullName?: string; students?: string[] } & InviteResult>('/me/guardians', { method: 'POST', body: JSON.stringify(input) }, token),
   myGuardians: (token: string) => request<MyGuardians>('/me/guardians', {}, token),
   guardianRequests: (token: string) => request<GuardianRequest[]>('/admin/guardian-requests', {}, token),
   approveGuardianRequest: (token: string, batchId: string, canManage: boolean) =>
@@ -693,6 +693,8 @@ export interface Guardian {
   /** Invited but hasn't chosen a password yet. */
   needsSetup?: boolean;
   children: { id: string; fullName: string }[];
+  /** Children a parent asked to add this adult to, waiting for admin approval. */
+  pendingChildren?: { id: string; fullName: string }[];
 }
 export interface ClassRow {
   id: string;

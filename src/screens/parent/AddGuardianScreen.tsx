@@ -48,7 +48,10 @@ export function AddGuardianScreen() {
         phone: form.phone.trim() || undefined,
         relationship: form.relationship,
       });
-      setMessage(`Request sent. The school will review it, and you'll get a message once ${form.fullName.trim()} is approved. Until then they can't drop off or pick up.`);
+      const name = result.fullName || form.fullName.trim();
+      setMessage(result.existingAccount
+        ? `${name} already has an account, so your children will be added to it. The school will review it, and you'll get a message once ${name} is approved. Until then they can't drop off or pick up.`
+        : `Request sent. The school will review it, and you'll get a message once ${name} is approved. Until then they can't drop off or pick up.`);
       if (result.emailSent !== undefined) setInvite({ name: form.fullName.trim(), result });
       setForm(emptyForm);
       loadGuardians();
